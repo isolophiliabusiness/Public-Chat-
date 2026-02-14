@@ -95,20 +95,33 @@ const saveMsgs = (r, msgs) => {
 
 // ===== SERVERS =====
 const httpServer = http.createServer((req, res) => {
-  const f = req.url === "/" ? "/index.html" : req.url;
-  if (f.startsWith("/admin-dashboard")) {
-    fs.readFile(path.join(__dirname, "admin-dashboard.html"), (e, d) => {
-      if (e) return res.end("404");
-      res.end(d);
-    });
-    return;
-  }
-  fs.readFile(path.join(__dirname, f), (e, d) => {
-    if (e) return res.end("404");
-    res.end(d);
-  });
-});
+  let filePath = req.url === "/" ? "/index.html" : req.url;
 
+  if (filePath.startsWith("/admin-dashboard")) {
+    filePath = "/admin-dashboard.html";
+  }
+
+  const fullPath = path.join(__dirname, filePath);
+  const ext = path.extname(fullPath);
+
+  let contentType = "text/html";
+
+  if (ext === ".css") contentType = "text/css";
+  if (ext === ".js") contentType = "application/javascript";
+  if (ext === ".png") contentType = "image/png";
+  if (ext === ".jpg" || ext === ".jpeg") contentType = "image/jpeg";
+  if (ext === ".json") contentType = "application/json";
+
+  fs.readFile(fullPath, (err, data) => {
+    if (err) {
+      res.writeHead(404);
+      return res.end("404 Not Found");
+    }
+
+    res.writeHead(200, { "Content-Type": contentType });
+    res.end(data);
+  });
+});
 let httpsServer = null;
 
 // ===== WEBSOCKET =====
