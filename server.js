@@ -7,8 +7,7 @@ const crypto = require("crypto");
 const { exec } = require("child_process");
 
 // ===== CONFIG =====
-const PORT_HTTP = process.env.PORT_HTTP || 8080;
-const PORT_HTTPS = process.env.PORT_HTTPS || 8443;
+const PORT = process.env.PORT || 3000;
 const DATA = "./data";
 const MSGS = "./data/messages";
 const USERS_FILE = DATA + "/users.json";
@@ -296,26 +295,14 @@ function setupWebSocket() {
 }
 
 // ===== START SERVERS =====
-function startServers() {
-  httpServer.listen(PORT_HTTP, () =>
-    console.log(`🔥 CHAT SERVER RUNNING @ http://localhost:${PORT_HTTP} (HTTP)`)
-  );
-  if (httpsAvailable) {
-    httpsServer = https.createServer(sslOptions, httpServer.listeners("request")[0]);
-    httpsServer.listen(PORT_HTTPS, () =>
-      console.log(`🔒 CHAT SERVER RUNNING @ https://localhost:${PORT_HTTPS} (HTTPS + WSS)`)
-    );
-    wss.options.server = httpsServer;
-  }
-  console.log("⚡ Ngrok removed, Termux/ARM environment ready");
-  setupWebSocket();
-}
+function startServer() {
+  httpServer.listen(PORT, () => {
+    console.log("🔥 CHAT SERVER RUNNING on port " + PORT);
+  });
 
-// ===== CHECK HTTPS =====
-if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
-  sslOptions = { key: fs.readFileSync(keyPath), cert: fs.readFileSync(certPath) };
-  httpsAvailable = true;
-  startServers();
-} else {
-  generateSSL(startServers);
+  setupWebSocket();
 }
+// ===== CHECK HTTPS =====
+startServer();
+
+
