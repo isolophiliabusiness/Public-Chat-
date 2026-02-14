@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Isolophilia Community</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- HEADER START -->
+  <header class="chat-header">
+    <div class="header-left">
+      <div class="logo">
+        <img src="logo.png" alt="Logo">
+      </div>
+      <div class="title-box">
+        <div class="title-row">
+          <h1>ISOLOPHILIA COMMUNITY</h1>
+          <span class="badge beta">Beta</span>
+          <span class="badge version">v1.09</span>
+        </div>
+        <p class="status">
+          Online: <span id="online">0 Live</span>
+         <span class="online-dot hidden" id="onlineDot"></span>       
+        <span id="deviceBadge" class="device-badge hidden" title="Secure session">🛡️ Same device detected</span>
+        </p>
+      </div>
+    </div>
+    <div class="menu">⋮</div>
+  </header>
+  <!-- HEADER END -->
+   <p id="dateDisplay" style="text-align: center; color: #fff; font-size: 14px; margin-top: 10px;"></p>
+  <!-- CHAT AREA START -->
+  <div class="chat-wrapper">
+    <div class="chat-bg">
+      <div id="chat" class="chat"></div>
+    </div>
+  </div>
+
+  <div class="input-bar">
+    <input type="text" id="messageInput" placeholder="Type a message..."/>
+    <button id="sendBtn">➤</button>
+  </div>
+
+  <!-- Scroll-to-bottom button -->
+
+  <!-- Chat JS -->
+   <script>
+document.addEventListener("DOMContentLoaded", () => {
+    const badge = document.getElementById("deviceBadge");
+    const ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host);
+    let myName = null;
+    const chat = document.getElementById("chat");
+    const input = document.getElementById("messageInput");
+    const sendBtn = document.getElementById("sendBtn");
+    const newMsgBtn = document.getElementById("newMsgBtn");
+    let unseenCount = 0;
+    let historyLoaded = false;
+
+    // ===== Date and Day Function =====
+    const dateDisplay = document.getElementById("dateDisplay");
+
+    function updateDate() {
+        const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+        const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+        const today = new Date();
+        const day = days[today.getDay()];
+        const date = today.getDate();
+        const month = months[today.getMonth()];
+        const year = today.getFullYear();
+
+   dateDisplay.innerHTML = `${day}, <span class="date">${date}</span> <span class="month">${month}</span> <span class="year">${year}</span>`;
+    }
+
+    updateDate(); // Call once to set the initial date
+    setInterval(updateDate, 1000); // Update every second (for real-time updates)
+
+    // ===== New Message Button Update =====
+  // Update new message button
+  function updateNewMsgBtn() {
+    if (unseenCount > 0) {
+      newMsgBtn.textContent = `${unseenCount} new message${unseenCount > 1 ? 's' : ''} ⬇`;
+      newMsgBtn.classList.remove("hidden");
+      newMsgBtn.classList.add("bounce");
+      setTimeout(() => newMsgBtn.classList.remove("bounce"), 700);
+    } else {
+      newMsgBtn.classList.add("hidden");
+    }
+  }
+
+  // Add message function
+  function addMessage(user, text, type = 'chat', isHistory = false) {
+    const div = document.createElement("div");
+    div.className = type === 'chat' ? (user === myName ? "message sent" : "message received") : 'message system';
+
+    if (type === 'system') {
+      div.textContent = text; // system messages jaise join/leave
+    } else {
+      const lastMessage = chat.lastElementChild;
+      if (!lastMessage || lastMessage.dataset.user !== user) {
+        const nameEl = document.createElement("div");
+        nameEl.className = "name";
+        nameEl.textContent = user;
+        div.appendChild(nameEl);
+      }
+
+      const msgEl = document.createElement("div");
+      msgEl.className = "msg-text";
+      msgEl.textContent = text;
+      div.appendChild(msgEl);
+
+      const timeEl = document.createElement("span");
+      timeEl.className = "timestamp";
+      timeEl.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      timeEl.style.float = (user === myName) ? 'right' : 'left';
+      div.appendChild(timeEl);
+    }
+
+    div.dataset.user = user;
+
+    div.style.opacity = "0";
+    div.style.transition = "opacity 0.1s ease";
+    chat.appendChild(div);
+
+    setTimeout(() => {
+      div.style.opacity = "1";
+      chat.scrollTop = chat.scrollHeight;
+    }, 1);
+
+    if (isHistory && !historyLoaded) {
+      chat.scrollTop = chat.scrollHeight;
+      historyLoaded = true;
+    } else if (!isHistory) {
+      const atBottom = chat.scrollHeight - chat.scrollTop <= chat.clientHeight + 5;
+      if (atBottom) {
+        chat.scrollTop = chat.scrollHeight;
+      } else {
+        unseenCount++;
+        updateNewMsgBtn();
+      }
+    }
+  }
+  // Send message
+  function sendMessage() {
+    const text = input.value.trim();
+    if (!text) return;
+    ws.send(JSON.stringify({ type: "chat", room: "public", text }));
+    input.value = "";
+  }
+
+  sendBtn.addEventListener("click", sendMessage);
+  input.addEventListener("keydown", (e) => {
+    if (e.key === 'Enter') sendMessage();
+  });
+
+  ws.onopen = () => ws.send(JSON.stringify({ type: 'history', room: 'public' }));
+
+  ws.onmessage = event => {
+    const data = JSON.parse(event.data);
+
+    if (data.type === 'me') {                                                                                                                         myName = data.user.name || "Guest";
+      if (data.user.name && data.user.nameChanges >= 1) badge.classList.add("show");
+      if (!data.user.name) {
+        const n = prompt("Enter your name");
+        if (n) { ws.send(JSON.stringify({ type: 'set-name', name: n })); myName = n; }
+      }
+    }
+
+    if (data.type === 'online-users') {
+      const onlineCount = document.getElementById("online");
+      onlineCount.textContent = `${data.count} Live`;
+
+      const onlineDot = document.getElementById("onlineDot");
+      if (data.count > 0) {
+        onlineDot.classList.remove("hidden");
+      } else {
+        onlineDot.classList.add("hidden");
+      }
+    }
+
+    if (data.type === 'chat') addMessage(data.msg.user, data.msg.text, 'chat', false);
+    if (data.type === 'history') data.messages.forEach(msg =>
+  addMessage(msg.user, msg.text, 'chat', true, msg.time)
+);
+    if (data.type === 'system') addMessage('', data.msg, 'system', false);
+  };
+
+  chat.style.webkitOverflowScrolling = "touch";
+  chat.style.overflowY = "auto";
+
+  chat.addEventListener("scroll", () => {
+    const atBottom = chat.scrollHeight - chat.scrollTop <= chat.clientHeight + 5;
+    if (atBottom) {
+      unseenCount = 0;
+      updateNewMsgBtn();
+    }
+  });
+});
+// ===== 3-dot Menu & Modal =====
+const menu = document.querySelector(".menu");
+
+// Create modal overlay
+const modal = document.createElement("div");
+modal.id = "menuModal";
+modal.style.position = "fixed";
+modal.style.top = "0";
+modal.style.left = "0";
+modal.style.width = "100%";
+modal.style.height = "100%";
+modal.style.backgroundColor = "rgba(0,0,0,0.5)";
+modal.style.display = "none";
+modal.style.zIndex = "1000";
+modal.style.justifyContent = "center";
+modal.style.alignItems = "center";
+
+// Modal content box
+const modalContent = document.createElement("div");
+modalContent.style.background = "#222";
+modalContent.style.color = "#fff";
+modalContent.style.padding = "20px";
+modalContent.style.borderRadius = "10px";
+modalContent.style.minWidth = "250px";
+modalContent.style.textAlign = "center";
+modalContent.style.fontSize = "14px";
+modal.appendChild(modalContent);
+
+// Close on outside click
+modal.addEventListener("click", (e) => {
+    if (e.target === modal) modal.style.display = "none";
+});
+
+// Add menu options
+function buildMenu() {
+    modalContent.innerHTML = "";
+
+    const options = [
+        { text: "Create Room", action: () => {
+            const name = prompt("Enter room name:");
+            if (name) {
+                const pass = prompt("Enter password (optional):");
+                ws.send(JSON.stringify({ type: "create-room", room: name, password: pass }));
+                alert(`Room "${name}" created!`);
+                modal.style.display = "none";
+            }
+        }},
+        { text: "View Online Users", action: () => {
+            alert(`Currently ${document.getElementById("online").textContent}`);
+        }},
+        { text: "Admin Dashboard", action: () => {
+            if (myName) ws.send(JSON.stringify({ type: "dashboard" }));
+        }}
+       ];
+
+// ===== My Rooms & Invite Feature =====
+options.push({ text: "My Rooms", action: async () => {
+    // fetch rooms from backend (dashboard already has rooms)
+    ws.send(JSON.stringify({ type: "dashboard" }));
+
+    // wait for dashboard response
+    const handler = (e) => {
+        const data = JSON.parse(e.data);
+        if (data.type === "dashboard") {
+            const userRooms = data.rooms.filter(r => {
+                // check if current user is member
+                return true; // backend me rooms ke members array use karna
+            });
+            let list = "Your Rooms:\n";
+            userRooms.forEach(r => list += "- " + r + "\n");
+            list += "\nTo invite someone, open console and use sendPrivate(toId, text) or Invite button";
+            alert(list);
+            ws.removeEventListener("message", handler);
+        }
+    };
+    ws.addEventListener("message", handler);
+}});
+
+
+    options.forEach(opt => {
+        const btn = document.createElement("button");
+        btn.textContent = opt.text;
+        btn.style.margin = "5px 0";
+        btn.style.width = "100%";
+        btn.style.padding = "8px";
+        btn.style.border = "none";
+        btn.style.borderRadius = "5px";
+        btn.style.background = "#444";
+        btn.style.color = "#fff";
+        btn.style.cursor = "pointer";
+        btn.addEventListener("click", opt.action);
+        modalContent.appendChild(btn);
+    });
+}
+
+// Menu toggle
+menu.addEventListener("click", () => {
+    buildMenu();
+    modal.style.display = "flex";
+});
+
+// Attach modal to body
+document.body.appendChild(modal);
+
+// ===== Admin Dashboard Hook =====
+ws.addEventListener("message", (e) => {
+    const data = JSON.parse(e.data);
+    if (data.type === "dashboard") {
+        let msg = `Online Users: ${data.onlineUsers}\nTotal Users: ${data.totalUsers}\nRooms: ${data.rooms.join(", ")}`;
+        alert(msg);
+    }
+});
+
+// ===== Private Chat & Reactions Hooks (ready) =====
+function sendPrivate(toId, text) {
+    ws.send(JSON.stringify({ type: "private-chat", toId, text }));
+}
+
+function reactToMessage(room, user, time, emoji) {
+    ws.send(JSON.stringify({ type: "react", room, user, time, emoji }));
+}
+</script>
+
+</body>
+</html>

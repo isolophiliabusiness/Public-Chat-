@@ -1,0 +1,511 @@
+/* ===== GLOBAL ===== */
+body {
+  margin: 0;
+  overflow: hidden; 
+  background: #000;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* ===== HEADER BASE ===== */
+.chat-header {
+  position: relative;
+  margin: 5px;
+  padding: 12px 16px;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background:#222; 
+  position:sticky; 
+  top:0; 
+  z-index:10;
+
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+
+  border-radius: 22px; /* horizontal curve */
+  overflow: hidden;
+}
+.chat-header::after {
+  content: "";
+  position: fixed;
+  bottom: -5%;                                                                              left: 14%;
+  width: 70%;                                                                               height: 1.5px;
+
+  background: linear-gradient(
+    90deg,                                                                                    transparent,
+    #00f7ff,
+    transparent
+  );
+
+  box-shadow: 0 0 10px rgba(0,247,255,0.6);
+  pointer-events: none;
+}
+
+/* ===== LEFT SIDE ===== */
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+/* ===== LOGO ===== */
+.logo {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  overflow: hidden;
+
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(0,247,255,0.6);
+  box-shadow: 0 0 10px rgba(0,247,255,0.25);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ===== TITLE ===== */
+.title-box {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.title-row h1 {
+  font-size: 13px;
+  margin: 0;
+  color: #fff;
+  letter-spacing: 0.6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ===== BADGES ===== */
+.badge {
+  font-size: 10px;
+  padding: 2px 4px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.online-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  background-color: #00ff7f; /* bright green */
+  border-radius: 50%;
+  margin-left: 6px;
+  vertical-align: middle;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(0.8); opacity: 0.7; }
+  50% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(0.8); opacity: 0.7; }
+}
+
+.beta {
+  background: #00f7ff;
+  color: #000;
+  font-weight: 600;
+}
+
+.version {
+  background: rgba(255,255,255,0.06);
+  color: #aaa;
+  border: 1px solid rgba(255,255,255,0.15);
+}
+
+/* ===== STATUS ===== */
+.status {
+  font-size: 11px;
+  color: #00ff7f;
+  margin: 2px 0 0;
+}
+
+/* ===== MENU ===== */
+.menu {
+  font-size: 20px;
+  color: #00f7ff;
+  cursor: pointer;
+  padding: 4px 6px;
+}
+
+/* ===== ANIMATION ===== */
+@keyframes glowScan {
+  from { left: -40%; }
+  to   { left: 100%; }
+}
+/* ===== CHAT WRAPPER ===== */
+.chat-wrapper {
+  position: fixed;
+  top: 78px;        /* header ke niche */
+  bottom: 90px;     /* input bar ke upar */
+  left: 0;
+  right: 0;
+}
+.chat-bg {
+  height: 100%;
+  width: 100%;
+}
+/* ===== CHAT MESSAGES CONTAINER ===== */
+
+/* ===== BASE MESSAGE STYLE ===== */
+.message {
+  width: fit-content;      /* 👈 MAGIC LINE */
+  max-width: 75%;
+  padding: 8px 12px;
+  font-size: 14px;
+  line-height: 1.4;
+  border-radius: 12px;
+  word-wrap: break-word;
+}
+
+/* ===== RECEIVED MESSAGE ===== */
+.message.received {
+  align-self: flex-start;
+  background: #1a1a1a;
+  color: #eaeaea;
+  border-top-left-radius: 4px;
+}
+/* ===== SENT MESSAGE ===== */
+.message.sent {
+  align-self: flex-end;
+  background: #005c4b; /* WhatsApp dark green vibe */
+  color: #eafff8;
+  border-top-right-radius: 4px;
+}
+.chat {
+  height: 100%;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+}
+.chat::-webkit-scrollbar {
+  width: 0;
+}
+
+.message.received {
+  align-self: flex-start;
+  background: #1f1f1f;
+  color: #eaeaea;
+  border-top-left-radius: 4px;
+}
+
+.message.sent {
+  align-self: flex-end;
+  background: #9E1B32;
+  color: #ffffff;
+  border-top-right-radius: 4px;
+}
+/* INPUT BAR */
+.input-bar {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 24px);
+  max-width: 480px;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 7px 11px;
+  background: #0e0e0e;
+  border-radius: 30px;
+
+  box-shadow: 0 8px 25px rgba(0,0,0,0.6);
+}
+
+.input-bar input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+
+  color: #fff;
+  font-size: 15px;
+}
+
+.input-bar input::placeholder {
+  color: #888;
+}
+
+.input-bar button {
+  width: 47px;
+  height: 47px;
+  border-radius: 50%;
+
+  border: none;
+  cursor: pointer;
+
+  background: #9E1B32;
+  color: #fff;
+  font-size: 18px;
+
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.input-bar button:active {
+  transform: scale(0.9);
+  background: #25cfa0;
+  border-radius: 50%;
+}
+.device-badge {
+  margin-left: 6px;
+  font-size: 10px;
+  padding: 2px 4px;
+  border-radius: 999px;
+  background: rgba(0,247,255,0.15);
+  color: #00f7ff;
+  border: 1px solid rgba(0,247,255,0.4);
+  white-space: nowrap;
+
+  position: relative;
+  top: 1px;               /* slight vertical adjustment */
+  
+  /* ===== Fade-in animation ===== */
+  opacity: 0;
+  transition: opacity 0.6s ease, transform 0.3s ease;
+}
+
+.device-badge.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ===== Admin Badge Color ===== */
+.device-badge.admin {
+  background: rgba(0,255,0,0.2);
+  color: #00ff00;
+  border-color: #00ff00;
+}
+
+/* Optional: hover cursor */
+.device-badge[title] {
+  cursor: help;
+}
+.device-badge {
+  position: absolute;
+  top: 43px; 
+  left: 78%;
+  transform: translateX(-50%);
+  padding: 2px 2px;
+  font-size: 5px;
+  font-weight: 600;
+  border-radius: 999px;
+  color: #E0FFFF;
+
+  /* Light glass / semi-transparent */
+  background: rgba(0, 247, 255, 0.2); /* normal user = blue glass */
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+
+  border: 1px solid rgba(0,247,255,0.4);
+  box-shadow: 0 2px 6px rgba(0,247,255,0.3);
+
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s ease, transform 0.3s ease;
+  z-index: 10;
+  text-align: center;
+}
+
+/* Fade-in + pulse */
+.device-badge.show {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) scale(1.05);
+  animation: pulse 2s infinite ease-in-out;
+}
+
+/* Admin badge = green glass */
+.device-badge.admin {
+  background: rgba(30, 255, 90, 0.2); /* green glass */
+  color: #000;
+  border: 1px solid rgba(30,255,90,0.4);
+  box-shadow: 0 2px 6px rgba(30,255,90,0.3);
+}
+
+/* Pulse animation */
+@keyframes pulse {
+  0%,100% { transform: translateX(-50%) scale(1); }
+  50% { transform: translateX(-50%) scale(1.08); }
+}
+
+/* Tooltip */
+.device-badge[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  top: -26px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.8);
+  color: #D6F9FF;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+  z-index: 20;
+}
+@media (hover: none) {
+  .device-badge[title]:active::after { opacity: 1; }
+}
+.chat-wrapper {
+  padding-bottom: 22px; /* input bar height + margin */
+}
+
+.name {
+  font-weight: bold;
+  font-size: 12px;
+  color: #aaa;
+}
+
+.msg-text {
+  display: block;
+}
+
+.message.sent .timestamp {
+    font-size: 8px;   /* sent message ka timestamp */
+    color: auto;
+    align-self: flex-end;
+}
+
+.message.received .timestamp {
+    font-size: 8px;   /* received message ka timestamp */
+    color: #AAAAAA;
+    align-self: flex-start;
+}
+/* ===== DATE AND DAY STYLE ===== */
+#dateDisplay {
+  font-size: 14px; /* Font size for date and day */
+  color: #00f7ff; /* Blue color for date */
+  background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent background */
+  padding: 1px 1px; /* Padding around the text */
+  border-radius: 8px; /* Rounded corners */
+  display: inline-block; /* Make it block to take full width */
+  font-family: 'Arial', sans-serif;
+  text-align: center; /* Center the text */
+  width: 40%; /* Full width */
+  position: fixed; /* Fix it to the top */
+  top: 68px; /* Adjust position below header (increase the value for more space) */
+  left: 110px;
+  z-index: 10; /* Ensure it stays above chat */
+}
+
+/* Day, Date, Month and Year styling */
+#dateDisplay .day {
+  font-weight: bold;
+  font-size: 16px; /* Larger font size for the day */
+  color: #ffffff; /* White color for the day */
+}
+
+#dateDisplay .date {
+  font-size: 14px; /* Date size */
+  color: #00f7ff; /* Blue color for date */
+}
+
+#dateDisplay .month {
+  font-style: italic; /* Italics for month */
+}
+
+#dateDisplay .year {
+  font-size: 14px; /* Year font size */
+  color: #b2b2b2; /* Gray color for year */
+}
+@keyframes dateFadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+#dateDisplay {
+  animation: dateFadeIn 1s ease-in-out; /* Fade-in effect */
+}
+.menu {
+  cursor: pointer;
+  font-size: 24px;
+  user-select: none;
+  position: relative;
+  z-index: 100;
+}
+
+/* Overlay for modals */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+/* Modal box */
+.modal {
+  background: #1f1f1f;
+  color: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  width: 340px;
+  max-width: 90%;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+  display: none;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.modal h2 {
+  margin: 0 0 10px 0;
+  font-size: 18px;
+}
+
+.modal input, .modal select {
+  padding: 8px 10px;
+  border-radius: 5px;
+  border: none;
+  background: #333;
+  color: #fff;
+}
+
+.modal button {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 5px;
+  background: #4caf50;
+  color: #fff;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.modal button:hover {
+  background: #45a049;
+}
+
+.modal .close {
+  background: #e53935;
+}
+
+.modal .close:hover {
+  background: #d32f2f;
+}
