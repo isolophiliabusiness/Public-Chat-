@@ -210,7 +210,7 @@ body {
 }
 
 .message.sent {
-  align-self: flex-end;
+  align-self: flex-right;
   background: #9E1B32;
   color: #ffffff;
   border-top-right-radius: 4px;

@@ -7,7 +7,7 @@ module.exports = {
       watch: true,
       env: {
         NODE_ENV: "development",
-        PORT_HTTP: 8081,   // dev http port
+        PORT_HTTP: 3000,   // dev http port
         PORT_HTTPS: 8444,  // dev https port
       },
       log_date_format: "YYYY-MM-DD HH:mm:ss",
@@ -35,7 +35,7 @@ module.exports = {
       exec_mode: "cluster",
       env: {
         NODE_ENV: "production",
-        PORT_HTTP: 8082,   // cluster http
+        PORT_HTTP: 3001,   // cluster http
         PORT_HTTPS: 8445,  // cluster https
       },
       log_date_format: "YYYY-MM-DD HH:mm:ss",
