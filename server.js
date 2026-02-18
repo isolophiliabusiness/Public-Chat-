@@ -39,6 +39,7 @@ const messageSchema = new mongoose.Schema({
   reactions: Object
 });
 
+app.set("trust proxy", 1); //extra line added remove this
 app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
