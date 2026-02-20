@@ -115,15 +115,31 @@ btn.onclick = () => {
       hour: "2-digit",
       minute: "2-digit"
     });
-    div.appendChild(timeEl);
+div.appendChild(timeEl);
 
-    div.dataset.id = messageId;
+div.dataset.id = messageId;
 if (isHistory && messageId) {
   oldestMessageId = messageId;
 }
-    chat.appendChild(div);
 
-    // Scroll logic
+// 🔥 MUST HAVE — bottom check BEFORE append
+const wasAtBottom =
+  chat.scrollTop + chat.clientHeight >= chat.scrollHeight - 20;
+
+chat.appendChild(div);
+
+if (isHistory && !historyLoaded) {
+  scrollToBottomSmooth();
+  historyLoaded = true;
+} else if (!isHistory) {
+  if (wasAtBottom) {
+    scrollToBottomSmooth();
+  } else {
+    unseenCount++;
+    updateNewMsgBtn();
+  }
+}
+    /* Scroll logic
     if (isHistory && !historyLoaded) {
       scrollToBottomSmooth();
       historyLoaded = true;
@@ -137,7 +153,18 @@ if (isHistory && messageId) {
         unseenCount++;
         updateNewMsgBtn();
       }
-    }
+    }*/
+/*if (isHistory && !historyLoaded) {
+  scrollToBottomSmooth();
+  historyLoaded = true;
+} else if (!isHistory) {
+  if (wasAtBottom) {
+    scrollToBottomSmooth();
+  } else {
+    unseenCount++;
+    updateNewMsgBtn();
+  }
+}*/
   }
 
   // ===== Update Reaction (chat-update) =====
