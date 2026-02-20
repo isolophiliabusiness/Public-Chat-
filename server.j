@@ -1,15 +1,11 @@
 const userLastMessage = new Map();
 const WebSocket = require("ws");
-//const fs = require("fs");
-//const path = require("path");
+const fs = require("fs");
+const path = require("path");
 const crypto = require("crypto");
 const mongoose = require("mongoose");
 require("dotenv").config();
 const sanitizeHtml = require("sanitize-html");
-const helmet = require("helmet");
-const rateLimit = require("express-rate-limit");
-//const MongoStore = require("connect-mongo");
-const MongoStore = require("connect-mongo").default;
 
 const express = require("express");
 const session = require("express-session");
@@ -17,73 +13,49 @@ const passport = require("passport");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 
 const app = express();
-app.use(helmet());
-
-const limiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 120,
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-app.use(limiter);
 
 // ===== CONFIG =====
 const PORT = process.env.PORT || 3000;
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 const MONGO_URI = process.env.MONGO_URI;
-if (!process.env.SESSION_SECRET) {
-  console.error("❌ SESSION_SECRET missing");
-  process.exit(1);
-}
+
 // ===== INIT FOLDERS =====
 
 // ===== HELPERS =====
 const deviceId = (req) =>
 crypto
 .createHash("sha256")
-.update(
-  (req.headers["x-forwarded-for"] || req.socket.remoteAddress) +
-  req.headers["user-agent"]
-)
-//.update(req.socket.remoteAddress + req.headers["user-agent"])
+.update(req.socket.remoteAddress + req.headers["user-agent"])
 .digest("hex");
 
 mongoose.connect(MONGO_URI)
   .then(() => console.log("✅ MongoDB Connected"))
   .catch(err => console.log("❌ MongoDB Error:", err));
 
- const messageSchema = new mongoose.Schema({
-   room: { type: String, required: true },
-   user: { type: String, required: true },
-   text: { type: String, required: true, maxlength: 500 },
-   time: { type: Number, index: true },
-   reactions: { type: Object, default: {} }
- });
-
-messageSchema.index({ room: 1, time: 1 });
+const messageSchema = new mongoose.Schema({
+  room: String,
+  user: String,
+  text: String,
+  time: Number,
+  reactions: Object
+});
 
 app.set("trust proxy", 1); //extra line added remove this
+/*app.use(session({
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false
+}));
+*/
 const sessionMiddleware = session({
   secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
-
-  store: MongoStore.create({
-    mongoUrl: MONGO_URI,
-    ttl: 14 * 24 * 60 * 60, // 14 days
-  }),
-
-/*  cookie: {
+  cookie: {
     httpOnly: true,
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-    secure: process.env.NODE_ENV === "production",
-  }*/
- cookie: {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax"
-    }  //localhost only
+    secure: false,
+    sameSite: "lax"
+  }
 });
 
 app.use(sessionMiddleware);
@@ -95,7 +67,6 @@ passport.use(new GoogleStrategy({
   clientID: process.env.GOOGLE_CLIENT_ID,
   clientSecret: process.env.GOOGLE_CLIENT_SECRET,
   callbackURL: "/auth/google/callback"
-//callbackURL: process.env.GOOGLE_CALLBACK_URL
 },
 (accessToken, refreshToken, profile, done) => {
 
@@ -136,11 +107,9 @@ app.get("/auth/google/callback",
 );
 
 app.get("/logout", (req, res) => {
-req.logout(() => {
-  req.session.destroy(() => {
+  req.logout(() => {
     res.redirect("/");
   });
-});
 });
 function ensureAuth(req, res, next) {
   if (req.isAuthenticated()) {
@@ -156,26 +125,11 @@ app.get("/", ensureAuth, (req, res) => {
 });
 
 app.use(express.static(__dirname));
-//app.use(express.static(__dirname + "/public"));
 
 const server = require("http").createServer(app);
 
 // ===== WEBSOCKET =====
- const wss = new WebSocket.Server({
-   server,
-   maxPayload: 1024 * 8 // 8KB limit (anti-DoS)
- });
-// ===== HEARTBEAT PING LOOP =====
-const interval = setInterval(() => {
-  wss.clients.forEach((ws) => {
-    if (ws.isAlive === false) {
-      return ws.terminate();
-    }
-
-    ws.isAlive = false;
-    ws.ping();
-  });
-}, 30000); // every 30 sec
+const wss = new WebSocket.Server({ server });
 
 const sockets = new Map();
 const onlineUsers = new Set();
@@ -190,13 +144,138 @@ function emitOnlineUsers() {
     if (c.readyState === WebSocket.OPEN) c.send(data);
   });
 }
-wss.on("connection", (ws, req) => {
-// ===== HEARTBEAT SETUP =====
-  ws.isAlive = true;
+/*wss.on("connection", async (ws, req) => {
+  const id = deviceId(req);
+  sockets.set(ws, { id, room: "public" });
+  onlineUsers.add(id);
+  emitOnlineUsers();
 
-  ws.on("pong", () => {
-    ws.isAlive = true;
+  ws.on("message", async (raw) => {
+    let data;
+
+    try {
+      data = JSON.parse(raw);
+    } catch {
+      return;
+    }
+
+    const userData = sockets.get(ws);
+    if (!userData) return;
+
+    const id = userData.id;
+
+    // ===== JOIN =====
+    if (data.type === "join") {
+      userData.room = data.room || "public";
+      sockets.set(ws, userData);
+      return;
+    }
+
+    // ===== CHAT =====
+    if (data.type === "chat") {
+      if (!data.text) return;
+
+      const room = userData.room;
+      const now = Date.now();
+      const lastTime = userLastMessage.get(id) || 0;
+
+      if (now - lastTime < 1000) return;
+      userLastMessage.set(id, now);
+
+      const message = new Message({
+        room,
+        user: data.user || "Guest",
+        text: data.text,
+        time: now,
+        reactions: {}
+      });
+
+      await message.save();
+
+      wss.clients.forEach((client) => {
+        const clientData = sockets.get(client);
+        if (!clientData) return;
+        if (clientData.room !== room) return;
+
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify({
+            type: "chat",
+            room,
+            msg: message
+          }));
+        }
+      });
+
+      return;
+    }
+
+    // ===== HISTORY =====
+    if (data.type === "history") {
+      const room = data.room || "public";
+
+      const messages = await Message.find({ room })
+        .sort({ time: 1 })
+        .limit(500);
+
+      ws.send(JSON.stringify({
+        type: "history",
+        room,
+        messages
+      }));
+
+      return;
+    }
+
+    // ===== REACTION =====
+    if (data.type === "react") {
+      const room = data.room || "public";
+
+      const msg = await Message.findOne({ room, time: data.time });
+      if (!msg) return;
+
+      msg.reactions = msg.reactions || {};
+      msg.reactions[data.emoji] =
+        (msg.reactions[data.emoji] || 0) + 1;
+
+      await msg.save();
+
+      wss.clients.forEach((client) => {
+        if (client.readyState === WebSocket.OPEN) {
+          client.send(JSON.stringify({
+            type: "chat-update",
+            room,
+            msg
+          }));
+        }
+      });
+
+      return;
+    }
   });
+
+  ws.on("close", () => {
+    const userData = sockets.get(ws);
+    if (!userData) return;
+
+    const id = userData.id;
+    sockets.delete(ws);
+
+    let stillConnected = false;
+    for (let value of sockets.values()) {
+      if (value.id === id) {
+        stillConnected = true;
+        break;
+      }
+    }
+
+    if (!stillConnected) {
+      onlineUsers.delete(id);
+    }
+
+    emitOnlineUsers();
+  });
+});*/
+wss.on("connection", (ws, req) => {
 
   sessionMiddleware(req, {}, async () => {
 
@@ -204,11 +283,6 @@ wss.on("connection", (ws, req) => {
       ws.close();
       return;
     }
-// ✅ SEND CURRENT USER TO CLIENT
-ws.send(JSON.stringify({
-  type: "me",
-  email: req.session.passport.user.email
-})); // remove tgsi permanent
 
     const id = deviceId(req);
     sockets.set(ws, { id, room: "public" });
@@ -237,9 +311,7 @@ ws.send(JSON.stringify({
 
       // ===== CHAT =====
       if (data.type === "chat") {
-       if (!data.text || !data.text.trim()) return;
-       // limit message length
-       if (data.text.length > 500) return; 
+        if (!data.text) return;
 
         const room = userData.room;
         const now = Date.now();
@@ -249,21 +321,15 @@ ws.send(JSON.stringify({
         userLastMessage.set(id, now);
 
         // XSS sanitize
- //       const cleanText = sanitizeHtml(data.text, {
-         const cleanText = sanitizeHtml(data.text.trim(), {   
-         allowedTags: [],
-         allowedAttributes: {}
+        const cleanText = sanitizeHtml(data.text, {
+          allowedTags: [],
+          allowedAttributes: {}
         });
 
-       /* const message = new Message({
+        const message = new Message({
           room,
           user: data.user || "Guest",
-          text: cleanText,*/
-         const userEmail = req.session.passport.user.email;
-         const message = new Message({
-         room,
-         user: userEmail,
-         text: cleanText,
+          text: cleanText,
           time: now,
           reactions: {}
         });
@@ -305,7 +371,6 @@ ws.send(JSON.stringify({
 
       // ===== REACTION =====
       if (data.type === "react") {
-       if (typeof data.emoji !== "string" || data.emoji.length > 10) return; //add
         const room = data.room || "public";
 
         const msg = await Message.findById(data.msgId);
@@ -317,7 +382,7 @@ ws.send(JSON.stringify({
         await msg.save();
 
         // Broadcast updated message
-  /*      wss.clients.forEach(client => {
+        wss.clients.forEach(client => {
           if (client.readyState === WebSocket.OPEN) {
             client.send(JSON.stringify({
               type: "chat-update",
@@ -326,22 +391,8 @@ ws.send(JSON.stringify({
             }));
           }
         });
-*/
-    
-wss.clients.forEach(client => {
-  const clientData = sockets.get(client);
-  if (!clientData) return;
-  if (clientData.room !== room) return;
 
-  if (client.readyState === WebSocket.OPEN) {
-    client.send(JSON.stringify({
-      type: "chat-update",
-      room,
-      msg
-    }));
-  }
-});
-    return;
+        return;
       }
     });
 
@@ -372,10 +423,6 @@ wss.clients.forEach(client => {
 
 });
 
-// ===== HEARTBEAT CLEANUP =====
-wss.on("close", () => {
-  clearInterval(interval);
-});
 // ===== START =====
 server.listen(PORT, () => {
 console.log("🔥 Chat Server Running on Port " + PORT);
