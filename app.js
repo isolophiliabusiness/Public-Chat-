@@ -252,11 +252,19 @@ if (isHistory) {
   chat.appendChild(div);
 }
 // ✅ DOM CAP — PUT HERE
-if (!isHistory) {
+/*if (!isHistory) {
   while (chat.children.length > MAX_MESSAGES_IN_DOM) {
     chat.removeChild(chat.firstChild);
   }
-}
+}*/
+if (!isHistory && chat.children.length > MAX_MESSAGES_IN_DOM) {
+  const removeCount = chat.children.length - MAX_MESSAGES_IN_DOM;
+
+  for (let i = 0; i < removeCount; i++) {
+    chat.removeChild(chat.firstChild);
+  }
+} //for testing only
+
   if (isHistory && !historyLoaded) {
     scrollToBottomSmooth();
     historyLoaded = true;
