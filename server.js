@@ -1,14 +1,13 @@
+// ====== REALTIME CHAT SERVER (HARDENED ORIGINAL VERSION) ======
+
 const userLastMessage = new Map();
 const WebSocket = require("ws");
-//const fs = require("fs");
-//const path = require("path");
 const crypto = require("crypto");
 const mongoose = require("mongoose");
 require("dotenv").config();
 const sanitizeHtml = require("sanitize-html");
 const helmet = require("helmet");
 const rateLimit = require("express-rate-limit");
-//const MongoStore = require("connect-mongo");
 const MongoStore = require("connect-mongo").default;
 
 const express = require("express");
@@ -19,163 +18,161 @@ const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const app = express();
 app.use(helmet());
 
+/* ================= RATE LIMIT ================= */
 const limiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
+  windowMs: 60 * 1000,
   max: 120,
   standardHeaders: true,
   legacyHeaders: false,
 });
-
 app.use(limiter);
 
-// ===== CONFIG =====
+/* ================= CONFIG ================= */
 const PORT = process.env.PORT || 3000;
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 const MONGO_URI = process.env.MONGO_URI;
+
 if (!process.env.SESSION_SECRET) {
   console.error("❌ SESSION_SECRET missing");
   process.exit(1);
 }
-// ===== INIT FOLDERS =====
 
-// ===== HELPERS =====
+if (!MONGO_URI) {
+  console.error("❌ MONGO_URI missing");
+  process.exit(1);
+}
+
+/* ================= DEVICE ID ================= */
 const deviceId = (req) =>
-crypto
-.createHash("sha256")
-.update(
-  (req.headers["x-forwarded-for"] || req.socket.remoteAddress) +
-  req.headers["user-agent"]
-)
-//.update(req.socket.remoteAddress + req.headers["user-agent"])
-.digest("hex");
+  crypto
+    .createHash("sha256")
+    .update(
+      (req.headers["x-forwarded-for"] || req.socket.remoteAddress) +
+        req.headers["user-agent"]
+    )
+    .digest("hex");
 
-mongoose.connect(MONGO_URI)
+/* ================= MONGODB ================= */
+mongoose
+  .connect(MONGO_URI)
   .then(() => console.log("✅ MongoDB Connected"))
-  .catch(err => console.log("❌ MongoDB Error:", err));
+  .catch((err) => {
+    console.error("❌ MongoDB Error:", err);
+    process.exit(1);
+  });
 
- const messageSchema = new mongoose.Schema({
-   room: { type: String, required: true },
-   user: { type: String, required: true },
-   text: { type: String, required: true, maxlength: 500 },
-   time: { type: Number, index: true },
-   reactions: { type: Object, default: {} }
- });
+/* ================= MESSAGE MODEL ================= */
+const messageSchema = new mongoose.Schema({
+  room: { type: String, required: true },
+  user: { type: String, required: true },
+  text: { type: String, required: true, maxlength: 500 },
+  time: { type: Number, index: true },
+  reactions: { type: Map, of: [String], default: {} },
+  status: { type: String, default: "server" },
+});
 
 messageSchema.index({ room: 1, time: 1 });
 
-app.set("trust proxy", 1); //extra line added remove this
+const Message = mongoose.model("Message", messageSchema);
+
+/* ================= SESSION ================= */
+app.set("trust proxy", 1);
+
 const sessionMiddleware = session({
   secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
-
   store: MongoStore.create({
     mongoUrl: MONGO_URI,
-    ttl: 14 * 24 * 60 * 60, // 14 days
+    ttl: 14 * 24 * 60 * 60,
   }),
-
-/*  cookie: {
+  cookie: {
     httpOnly: true,
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     secure: process.env.NODE_ENV === "production",
-  }*/
- cookie: {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax"
-    }  //localhost only
+    sameSite:
+      process.env.NODE_ENV === "production" ? "none" : "lax",
+  },
 });
 
 app.use(sessionMiddleware);
-
 app.use(passport.initialize());
 app.use(passport.session());
 
-passport.use(new GoogleStrategy({
-  clientID: process.env.GOOGLE_CLIENT_ID,
-  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-  callbackURL: "/auth/google/callback"
-//callbackURL: process.env.GOOGLE_CALLBACK_URL
-},
-(accessToken, refreshToken, profile, done) => {
+/* ================= GOOGLE AUTH ================= */
+passport.use(
+  new GoogleStrategy(
+    {
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL: "/auth/google/callback",
+    },
+    (accessToken, refreshToken, profile, done) => {
+      const email = profile.emails?.[0]?.value;
+      if (!email) return done(null, false);
 
-  const email = profile.emails[0].value;
+      let role = "user";
+      if (email === ADMIN_EMAIL) role = "admin";
 
-  let role = "user";
-  if (email === ADMIN_EMAIL) {
-    role = "admin";
-  }
+      const user = {
+        id: profile.id,
+        email,
+        role,
+      };
 
-  const user = {
-    id: profile.id,
-    email,
-    role
-  };
+      done(null, user);
+    }
+  )
+);
 
-  done(null, user);
-}));
+passport.serializeUser((user, done) => done(null, user));
+passport.deserializeUser((user, done) => done(null, user));
 
-passport.serializeUser((user, done) => {
-  done(null, user);
-});
-
-passport.deserializeUser((user, done) => {
-  done(null, user);
-});
-app.get("/auth/google",
+app.get(
+  "/auth/google",
   passport.authenticate("google", { scope: ["profile", "email"] })
 );
 
-app.get("/auth/google/callback",
-  passport.authenticate("google", {
-    failureRedirect: "/"
-  }),
-  (req, res) => {
-    res.redirect("/");
-  }
+app.get(
+  "/auth/google/callback",
+  passport.authenticate("google", { failureRedirect: "/" }),
+  (req, res) => res.redirect("/")
 );
 
 app.get("/logout", (req, res) => {
-req.logout(() => {
-  req.session.destroy(() => {
-    res.redirect("/");
+  req.logout(() => {
+    req.session.destroy(() => {
+      res.redirect("/");
+    });
   });
 });
-});
+
 function ensureAuth(req, res, next) {
-  if (req.isAuthenticated()) {
-    return next();
-  }
+  if (req.isAuthenticated()) return next();
   res.redirect("/auth/google");
 }
-
-const Message = mongoose.model("Message", messageSchema);
 
 app.get("/", ensureAuth, (req, res) => {
   res.sendFile(__dirname + "/index.html");
 });
 
 app.use(express.static(__dirname));
-//app.use(express.static(__dirname + "/public"));
 
 const server = require("http").createServer(app);
 
-// ===== WEBSOCKET =====
- const wss = new WebSocket.Server({
-   server,
-   maxPayload: 1024 * 8 // 8KB limit (anti-DoS)
- });
-// ===== HEARTBEAT PING LOOP =====
+/* ================= WEBSOCKET ================= */
+const wss = new WebSocket.Server({
+  server,
+  maxPayload: 1024 * 8,
+});
+
+/* ================= HEARTBEAT ================= */
 const interval = setInterval(() => {
   wss.clients.forEach((ws) => {
-    if (ws.isAlive === false) {
-      return ws.terminate();
-    }
-
+    if (ws.isAlive === false) return ws.terminate();
     ws.isAlive = false;
     ws.ping();
   });
-}, 30000); // every 30 sec
+}, 30000);
 
 const sockets = new Map();
 const onlineUsers = new Set();
@@ -190,25 +187,33 @@ function emitOnlineUsers() {
     if (c.readyState === WebSocket.OPEN) c.send(data);
   });
 }
+
 wss.on("connection", (ws, req) => {
-// ===== HEARTBEAT SETUP =====
   ws.isAlive = true;
+  ws.on("pong", () => (ws.isAlive = true));
 
-  ws.on("pong", () => {
-    ws.isAlive = true;
-  });
-
-  sessionMiddleware(req, {}, async () => {
-
-    if (!req.session || !req.session.passport) {
+/*  sessionMiddleware(req, {}, async () => {
+    if (!req.session?.passport?.user) {
       ws.close();
       return;
-    }
-// ✅ SEND CURRENT USER TO CLIENT
-ws.send(JSON.stringify({
-  type: "me",
-  email: req.session.passport.user.email
-})); // remove tgsi permanent
+    }*/
+sessionMiddleware(req, {}, () => {
+
+  passport.initialize()(req, {}, () => {
+    passport.session()(req, {}, () => {
+
+      if (!req.user) {
+        ws.close();
+        return;
+      }
+
+    ws.send(
+      JSON.stringify({
+        type: "me",
+        //email: req.session.passport.user.email,
+     email: req.user.email, 
+})
+    );
 
     const id = deviceId(req);
     sockets.set(ws, { id, room: "public" });
@@ -227,131 +232,182 @@ ws.send(JSON.stringify({
       if (!userData) return;
 
       const id = userData.id;
+      const room = userData.room;
 
-      // ===== JOIN =====
+      /* ===== JOIN ===== */
       if (data.type === "join") {
         userData.room = data.room || "public";
         sockets.set(ws, userData);
         return;
       }
 
-      // ===== CHAT =====
+      /* ===== CHAT ===== */
       if (data.type === "chat") {
-       if (!data.text || !data.text.trim()) return;
-       // limit message length
-       if (data.text.length > 500) return; 
+        if (!data.text?.trim()) return;
+        if (data.text.length > 500) return;
 
-        const room = userData.room;
         const now = Date.now();
         const lastTime = userLastMessage.get(id) || 0;
-
-        if (now - lastTime < 1000) return; // 1 msg/sec rate limit
+        if (now - lastTime < 1000) return;
         userLastMessage.set(id, now);
 
-        // XSS sanitize
- //       const cleanText = sanitizeHtml(data.text, {
-         const cleanText = sanitizeHtml(data.text.trim(), {   
-         allowedTags: [],
-         allowedAttributes: {}
+        const cleanText = sanitizeHtml(data.text.trim(), {
+          allowedTags: [],
+          allowedAttributes: {},
         });
 
-       /* const message = new Message({
+        //const userEmail = req.session.passport.user.email;
+//const userEmail = req.user?.email;
+const userEmail = req.user.email;
+
+/*if (!userEmail) {
+  console.log("⚠️ Missing user email in WS");
+  return;
+}*/
+        const message = new Message({
           room,
-          user: data.user || "Guest",
-          text: cleanText,*/
-         const userEmail = req.session.passport.user.email;
-         const message = new Message({
-         room,
-         user: userEmail,
-         text: cleanText,
+          user: userEmail,
+          text: cleanText,
           time: now,
-          reactions: {}
+          reactions: {},
+          status: "server",
         });
+
         await message.save();
 
-        // Broadcast to all clients in same room
-        wss.clients.forEach(client => {
+        wss.clients.forEach((client) => {
           const clientData = sockets.get(client);
           if (!clientData) return;
           if (clientData.room !== room) return;
           if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify({
-              type: "chat",
-              room,
-              msg: message  // msg._id unique for reactions
-            }));
+            client.send(
+              JSON.stringify({
+                type: "chat",
+                room,
+                msg: message,
+              })
+            );
           }
         });
+
+        message.status = "delivered";
+        await message.save();
+
+        ws.send(
+          JSON.stringify({
+            type: "status-update",
+            msgId: message._id,
+            state: "delivered",
+          })
+        );
 
         return;
       }
 
-      // ===== HISTORY =====
+      /* ===== HISTORY ===== */
       if (data.type === "history") {
-        const room = data.room || "public";
-
         const messages = await Message.find({ room })
           .sort({ time: 1 })
           .limit(500);
 
-        ws.send(JSON.stringify({
-          type: "history",
-          room,
-          messages
-        }));
+        ws.send(
+          JSON.stringify({
+            type: "history",
+            room,
+            messages,
+          })
+        );
 
         return;
       }
 
-      // ===== REACTION =====
-      if (data.type === "react") {
-       if (typeof data.emoji !== "string" || data.emoji.length > 10) return; //add
-        const room = data.room || "public";
-
+      /* ===== SEEN ===== */
+      if (data.type === "seen") {
         const msg = await Message.findById(data.msgId);
-        if (!msg) return;
+        if (!msg || msg.room !== room) return;
 
-        msg.reactions = msg.reactions || {};
-        msg.reactions[data.emoji] = (msg.reactions[data.emoji] || 0) + 1;
+        if (msg.status !== "seen") {
+          msg.status = "seen";
+          await msg.save();
+        }
+
+        ws.send(
+          JSON.stringify({
+            type: "status-update",
+            msgId: msg._id,
+            state: "seen",
+          })
+        );
+
+        return;
+      }
+
+      /* ===== REACTION ===== */
+      if (data.type === "react") {
+        if (typeof data.emoji !== "string" || data.emoji.length > 10)
+          return;
+
+        const userEmail = req.session.passport.user.email;
+const msg = await Message.findById(data.msgId);
+        if (!msg || msg.room !== room) return;
+
+        msg.reactions = msg.reactions || new Map();
+
+        if (!(msg.reactions instanceof Map)) {
+          msg.reactions = new Map(Object.entries(msg.reactions));
+        }
+
+        let alreadyHadSame = false;
+
+        for (const [emojiKey, users] of msg.reactions.entries()) {
+          const index = users.indexOf(userEmail);
+
+          if (emojiKey === data.emoji && index !== -1) {
+            alreadyHadSame = true;
+          }
+
+          if (index !== -1) {
+            users.splice(index, 1);
+            msg.reactions.set(emojiKey, users);
+          }
+        }
+
+        if (!alreadyHadSame) {
+          const arr = msg.reactions.get(data.emoji) || [];
+          arr.push(userEmail);
+          msg.reactions.set(data.emoji, arr);
+        }
 
         await msg.save();
 
-        // Broadcast updated message
-  /*      wss.clients.forEach(client => {
+        wss.clients.forEach((client) => {
+          const clientData = sockets.get(client);
+          if (!clientData) return;
+          if (clientData.room !== room) return;
+
           if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify({
-              type: "chat-update",
-              room,
-              msg
-            }));
+            client.send(
+              JSON.stringify({
+                type: "chat-update",
+                room,
+                msg,
+              })
+            );
           }
         });
-*/
-    
-wss.clients.forEach(client => {
-  const clientData = sockets.get(client);
-  if (!clientData) return;
-  if (clientData.room !== room) return;
 
-  if (client.readyState === WebSocket.OPEN) {
-    client.send(JSON.stringify({
-      type: "chat-update",
-      room,
-      msg
-    }));
-  }
-});
-    return;
+        return;
       }
     });
 
-    // ===== DISCONNECT =====
+    /* ===== DISCONNECT ===== */
     ws.on("close", () => {
       const userData = sockets.get(ws);
       if (!userData) return;
 
       const id = userData.id;
       sockets.delete(ws);
+      userLastMessage.delete(id);
 
       let stillConnected = false;
       for (let value of sockets.values()) {
@@ -361,23 +417,20 @@ wss.clients.forEach(client => {
         }
       }
 
-      if (!stillConnected) {
-        onlineUsers.delete(id);
-      }
+      if (!stillConnected) onlineUsers.delete(id);
 
       emitOnlineUsers();
     });
+  //});
+//});
+}); // passport.session
+  });   // passport.initialize
+});     // sessionMiddleware
+});     // wss connection
+/* ===== CLEANUP ===== */
+wss.on("close", () => clearInterval(interval));
 
-  });
-
-});
-
-// ===== HEARTBEAT CLEANUP =====
-wss.on("close", () => {
-  clearInterval(interval);
-});
-// ===== START =====
+/* ===== START ===== */
 server.listen(PORT, () => {
-console.log("🔥 Chat Server Running on Port " + PORT);
+  console.log("🔥 Chat Server Running on Port " + PORT);
 });
-
