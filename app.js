@@ -1,7 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
 
 /* ================= GLOBAL STATE ================= */
-const MAX_MESSAGES_IN_DOM = 300;
+const MAX_MESSAGES_IN_DOM = 500;
 let ws;
 let reconnectDelay = 2000;
 let oldestMessageId = null;
