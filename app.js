@@ -1,7 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
 
 /* ================= GLOBAL STATE ================= */
-
+const MAX_MESSAGES_IN_DOM = 300;
 let ws;
 let reconnectDelay = 2000;
 let oldestMessageId = null;
@@ -19,6 +19,20 @@ const sendBtn = document.getElementById("sendBtn");
 const newMsgBtn = document.getElementById("newMsgBtn");
 
 /* ================= HELPERS ================= */
+function getTopVisibleMessage() {
+  const messages = chat.children;
+  if (!messages.length) return null; // optional safety
+
+  const chatRect = chat.getBoundingClientRect();
+
+  for (let i = 0; i < messages.length; i++) {
+    const rect = messages[i].getBoundingClientRect();
+    if (rect.bottom > chatRect.top) {
+      return messages[i];
+    }
+  }
+  return null;
+}
 
 function scrollToBottomSmooth() {
   chat.scrollTo({
@@ -42,9 +56,13 @@ function connectWS() {
   ws.onopen = () => {
     reconnectDelay = 2000;
 
-    if (!window.currentUser) {
-      window.currentUser = localStorage.getItem("chatUser") || null;
-    }
+if (!window.currentUser) {
+  const cachedUser = localStorage.getItem("chatUser");
+
+  if (cachedUser && !window.currentUser) {
+    window.currentUser = cachedUser;
+  }
+}
 
     ws.send(JSON.stringify({
       type: "join",
@@ -65,6 +83,11 @@ function connectWS() {
     setTimeout(connectWS, reconnectDelay);
     reconnectDelay = Math.min(reconnectDelay * 1.5, 10000);
   };
+//add this at 11:55pm for testing only
+ws.onerror = (err) => {
+  console.warn("WS error", err);
+};
+
 }
 
 connectWS();
@@ -215,15 +238,25 @@ function addMessage(
   const wasAtBottom =
     chat.scrollTop + chat.clientHeight >= chat.scrollHeight - 20;
 
-  if (isHistory) {
-    const prevHeight = chat.scrollHeight;
-    chat.prepend(div);
-    const newHeight = chat.scrollHeight;
-    chat.scrollTop += newHeight - prevHeight;
-  } else {
-    chat.appendChild(div);
-  }
+if (isHistory) {
+  const anchor = getTopVisibleMessage();
+  const prevTop = anchor ? anchor.getBoundingClientRect().top : 0;
 
+  chat.prepend(div);
+
+  if (anchor) {
+    const newTop = anchor.getBoundingClientRect().top;
+    chat.scrollTop += newTop - prevTop;
+  }
+} else {
+  chat.appendChild(div);
+}
+// ✅ DOM CAP — PUT HERE
+if (!isHistory) {
+  while (chat.children.length > MAX_MESSAGES_IN_DOM) {
+    chat.removeChild(chat.firstChild);
+  }
+}
   if (isHistory && !historyLoaded) {
     scrollToBottomSmooth();
     historyLoaded = true;
@@ -346,7 +379,8 @@ function handleWSMessage(event) {
     if (data.messages.length < 500) {
       historyEndReached = true;
     }
-  }
+ loadingHistory = false; 
+}
 
   if (data.type === "chat") {
     addMessage(
@@ -388,33 +422,49 @@ newMsgBtn.addEventListener("click", () => {
 
 /* ================= SCROLL ================= */
 
-chat.addEventListener("scroll", () => {
+let scrollTicking = false;
 
-  const atBottom =
-    chat.scrollHeight - chat.scrollTop <= chat.clientHeight + 5;
+//chat.addEventListener("scroll", () => {
+  chat.addEventListener("scroll", () => {
+if (scrollTicking) return;
+  scrollTicking = true;
 
-  if (atBottom) {
-    unseenCount = 0;
-    updateNewMsgBtn();
+requestAnimationFrame(() => {
+//    const atBottom =
+const scrollTop = chat.scrollTop;
+const scrollHeight = chat.scrollHeight;
+const clientHeight = chat.clientHeight;
+
+const atBottom =
+  scrollHeight - scrollTop <= clientHeight + 5; //testimg
+
+    // ✅ unseen reset
+    if (atBottom) {
+      unseenCount = 0;
+      updateNewMsgBtn();
+    }
+
+    // ✅ history load trigger
+const nearTop = scrollTop <= 50;
+
+if (nearTop && !loadingHistory && !historyEndReached) {
+  if (!ws || ws.readyState !== WebSocket.OPEN) {
+    scrollTicking = false;
+    return;
   }
 
-  if (chat.scrollTop === 0 && !loadingHistory && !historyEndReached) {
+  loadingHistory = true;
 
-    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  ws.send(JSON.stringify({
+    type: "history",
+    room: "public",
+    beforeId: oldestMessageId
+  }));
+}
 
-    loadingHistory = true;
-
-    ws.send(JSON.stringify({
-      type: "history",
-      room: "public",
-      beforeId: oldestMessageId
-    }));
-
-    setTimeout(() => {
-      loadingHistory = false;
-    }, 1000);
-  }
-});
+    scrollTicking = false;
+  });
+}, { passive: true });
 
 /* ===== GLOBAL CLICK CLOSE POPUP ===== */
 
