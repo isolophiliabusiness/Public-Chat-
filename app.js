@@ -1,7 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
 
 /* ================= GLOBAL STATE ================= */
-const MAX_MESSAGES_IN_DOM = 300;
+const MAX_MESSAGES_IN_DOM = 500;
 let ws;
 let reconnectDelay = 2000;
 let oldestMessageId = null;
@@ -12,6 +12,10 @@ let loadingHistory = false;
 let historyEndReached = false;
 
 const renderedMessages = new Set();
+let lastMessageUser = null;
+let lastMessageWasHistory = false;
+let lastMessageTime = 0; // 🆕 time gap ke liye
+const GROUP_TIME_LIMIT = 5 * 60 * 1000; // 5 minutes
 
 const chat = document.getElementById("chat");
 const input = document.getElementById("messageInput");
@@ -110,18 +114,31 @@ function addMessage(
   const div = document.createElement("div");
   if (messageId) div.dataset.id = messageId;
 
-  const isMe =
-    (user || "").trim().toLowerCase() ===
-    (window.currentUser || "").trim().toLowerCase();
+// ===== IS ME =====
+const isMe =
+  (user || "").trim().toLowerCase() ===
+  (window.currentUser || "").trim().toLowerCase();
 
-  div.className = isMe ? "message sent" : "message received";
-  div.style.position = "relative";
+// ===== TIME GAP =====
+const timeDiff = Math.abs(time - lastMessageTime);
 
-  /* ===== NAME ===== */
+// ===== GROUPING LOGIC (PRO) =====
+const isGrouped =
+  lastMessageUser === user &&
+  timeDiff <= GROUP_TIME_LIMIT &&
+  !isHistory; // 🔥 history messages ko force new group
+
+div.className =
+  (isMe ? "message sent" : "message received") +
+  (isGrouped ? " grouped" : " new-group");
+
+// ===== NAME =====
+if (!isGrouped) {
   const nameEl = document.createElement("div");
   nameEl.className = "name";
   nameEl.textContent = user || "Unknown";
   div.appendChild(nameEl);
+}
 
   /* ===== TEXT ===== */
   const msgEl = document.createElement("div");
@@ -234,9 +251,8 @@ function addMessage(
   });
 
   /* ===== APPEND / PREPEND ===== */
-
-  const wasAtBottom =
-    chat.scrollTop + chat.clientHeight >= chat.scrollHeight - 20;
+const wasAtBottom =
+  Math.abs(chat.scrollHeight - chat.scrollTop - chat.clientHeight) < 10;
 
 if (isHistory) {
   const anchor = getTopVisibleMessage();
@@ -268,6 +284,10 @@ if (!isHistory) {
       updateNewMsgBtn();
     }
   }
+// ===== UPDATE GROUP TRACKER =====
+lastMessageUser = user;
+lastMessageWasHistory = isHistory;
+lastMessageTime = time; // 🆕 VERY IMPORTANT
 }
 
 /* ================= REACTION UPDATE ================= */
@@ -364,8 +384,9 @@ function handleWSMessage(event) {
       oldestMessageId = data.messages[0]._id;
     }
 
-    data.messages.forEach(msg => {
-      addMessage(
+    //data.messages.forEach(msg => {
+     data.messages.reverse().forEach(msg => {
+        addMessage(
         msg.user,
         msg.text,
         true,
@@ -425,42 +446,40 @@ newMsgBtn.addEventListener("click", () => {
 let scrollTicking = false;
 
 //chat.addEventListener("scroll", () => {
-  chat.addEventListener("scroll", () => {
-if (scrollTicking) return;
+chat.addEventListener("scroll", () => {
+  if (scrollTicking) return;
   scrollTicking = true;
 
-requestAnimationFrame(() => {
-//    const atBottom =
-const scrollTop = chat.scrollTop;
-const scrollHeight = chat.scrollHeight;
-const clientHeight = chat.clientHeight;
+  requestAnimationFrame(() => {
+    const scrollTop = chat.scrollTop;
+    const scrollHeight = chat.scrollHeight;
+    const clientHeight = chat.clientHeight;
 
-const atBottom =
-  scrollHeight - scrollTop <= clientHeight + 5; //testimg
+    const atBottom =
+      scrollHeight - scrollTop <= clientHeight + 5;
 
-    // ✅ unseen reset
     if (atBottom) {
       unseenCount = 0;
       updateNewMsgBtn();
     }
 
-    // ✅ history load trigger
-const nearTop = scrollTop <= 50;
+    //const nearTop = scrollTop <= 50;
+     const nearTop = scrollTop <= 80;
 
-if (nearTop && !loadingHistory && !historyEndReached) {
-  if (!ws || ws.readyState !== WebSocket.OPEN) {
-    scrollTicking = false;
-    return;
-  }
+    if (nearTop && !loadingHistory && !historyEndReached) {
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        scrollTicking = false;
+        return;
+      }
 
-  loadingHistory = true;
+      loadingHistory = true;
 
-  ws.send(JSON.stringify({
-    type: "history",
-    room: "public",
-    beforeId: oldestMessageId
-  }));
-}
+      ws.send(JSON.stringify({
+        type: "history",
+        room: "public",
+        beforeId: oldestMessageId
+      }));
+    }
 
     scrollTicking = false;
   });
