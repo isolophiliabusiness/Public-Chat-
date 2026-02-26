@@ -57,6 +57,24 @@ if(logoutBtn) {
   const input = document.getElementById("messageInput");
   const sendBtn = document.getElementById("sendBtn");
   const newMsgBtn = document.getElementById("newMsgBtn");
+
+/* ================= CHAT SOUNDS ================= */
+const sendSound = new Audio("send.mp3");
+const receiveSound = new Audio("received.mp3");
+
+sendSound.preload = "auto";
+receiveSound.preload = "auto";
+
+function playSendSound() {
+  sendSound.currentTime = 0;
+  sendSound.play().catch(() => {});
+}
+
+function playReceiveSound() {
+  receiveSound.currentTime = 0;
+  receiveSound.play().catch(() => {});
+}
+
 /* ================= TYPING STATE ================= */
 let typingTimeout = null;
 let isTyping = false;
@@ -382,10 +400,31 @@ if (data.type === "typing") {
 
 if (data.type === "chat") {
    removeTypingIndicator();
-// Jab message aata hai, tum use add karte ho aur status ko "seen" mark karte ho
-    addMessage(data.msg.user, data.msg.text, false, data.msg.time, data.msg._id, data.msg.reactions, data.msg.status || "server", data.msg.avatar);
-    updateMessageStatus(data.msg._id, 'seen');  // Message ko "seen" mark kar rahe hain
-  }
+
+   const isMe =
+     (data.msg.user || "").trim().toLowerCase() ===
+     (window.currentUser || "").trim().toLowerCase();
+
+   addMessage(
+     data.msg.user,
+     data.msg.text,
+     false,
+     data.msg.time,
+     data.msg._id,
+     data.msg.reactions,
+     data.msg.status || "server",
+     data.msg.avatar
+   );
+
+   updateMessageStatus(data.msg._id, 'seen');
+
+   // 🔊 Sound play
+   if (isMe) {
+     playSendSound();
+   } else {
+     playReceiveSound();
+   }
+}
 
     if (data.type === "chat-update") updateMessage(data.msg);
     if (data.type === "status-update") updateMessageStatus(data.msgId, data.state);
