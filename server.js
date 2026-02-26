@@ -257,6 +257,26 @@ ws.send(JSON.stringify({
         sockets.set(ws, userData);
         return;
       }
+/* ===== TYPING ===== */
+if (data.type === "typing") {
+  wss.clients.forEach((client) => {
+    const clientData = sockets.get(client);
+    if (!clientData) return;
+    if (clientData.room !== room) return;
+    if (client === ws) return;
+
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(
+        JSON.stringify({
+          type: "typing",
+          name: req.user?.name,
+          isTyping: data.isTyping
+        })
+      );
+    }
+  });
+  return;
+}
 
       /* ===== CHAT ===== */
       if (data.type === "chat") {

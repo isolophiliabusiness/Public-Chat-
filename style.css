@@ -455,43 +455,6 @@ body {
   margin-top: 4px;
   opacity: 0.85;
 }
-/*.status {
-  display: flex;
-  flex-direction: row;  
-  align-items: center;
-  gap: 2px;
-  margin-left: 4px;
-} 
-.tick {
-  fill: none;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.tick.small {
-  width: 14px;
-  height: 14px;
-  stroke-width: 2;
-}
-
-.tick.big {
-  width: 14px;
-  height: 14px;
-  stroke-width: 2;
-  margin-left: -4px; 
-}
-.hidden {
-  display: none;
-}*/
-/* delivered = grey */
-/*.status .tick {
-  stroke: #9ca3af;
-}*/
-
-/* seen = blue */
-/*.status.seen .tick {
-  stroke: #2dd4bf;
-}*/
 /* Status positioning - Align both ticks at the same place */
 .status {
     position: relative;
@@ -651,41 +614,49 @@ body {
   transition: all 0.2s ease;
   z-index: 20;
 }
-
+#newMsgBtn {
+position: absolute;
+  bottom: 90px;
+  right: 20px;
+  z-index: 50;
+}
 #newMsgBtn:hover {
   transform: translateX(-50%) scale(1.05);
 }
-/* ===== WhatsApp Style Avatar Logic ===== */
+.avatar-spacer {
+  width: 32px; /* avatar size ke according adjust */
+}
 
-/* Default avatar hidden */
-/*.message-row .avatar {
-  visibility: hidden;
-}*/
+.typing-indicator.theme-typing {
+  padding: 8px 14px;
+  border-radius: 16px;
+  background: #1f1f1f; /* match your received bubble bg */
+  border: 1px solid rgba(255,255,255,0.05);
+}
 
-/* Sirf first message of group me avatar visible */
-/*.message-row.new-group .avatar {
-  visibility: visible;
-}*/
-
-/* Apne (sent) messages me avatar kabhi nahi */
-/*.message-row.me .avatar {
-  display: none;
-}*/
-
-/* Left side alignment fix */
-/*.message-row {
+.typing-dots {
   display: flex;
-  align-items: flex-end;
-  gap: 6px;
-}*/
+  gap: 5px;
+}
 
-/* Received left */
-/*.message-row:not(.me) {
-  justify-content: flex-start;
+.typing-dots span {
+  width: 6px;
+  height: 6px;
+  background: #9aa0a6; /* soft grey like WhatsApp */
+  border-radius: 50%;
+  animation: smoothBounce 1.4s infinite ease-in-out;
 }
-*/
-/* Sent right */
-/*.message-row.me {
-  justify-content: flex-end;
+
+.typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes smoothBounce {
+  0%, 80%, 100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  40% {
+    transform: translateY(-3px);
+    opacity: 1;
+  }
 }
-*/

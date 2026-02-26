@@ -57,6 +57,9 @@ if(logoutBtn) {
   const input = document.getElementById("messageInput");
   const sendBtn = document.getElementById("sendBtn");
   const newMsgBtn = document.getElementById("newMsgBtn");
+/* ================= TYPING STATE ================= */
+let typingTimeout = null;
+let isTyping = false;
 
   /* ================= HELPERS ================= */
   function getTopVisibleMessage() {
@@ -87,6 +90,7 @@ if(logoutBtn) {
 
     ws.onopen = () => {
       reconnectDelay = 2000;
+      retryCount = 0;
 
       if (!window.currentUser) {
         const cachedUser = localStorage.getItem("chatUser");
@@ -324,23 +328,26 @@ function sendMessage() {
     messageId: messageID  // Yeh ID message ke sath bhej rahe hain
   }));
 
-  // Message ko "delivered" status dene ke liye
-  updateMessageStatus(messageID, 'delivered');  // Small tick show hoga
-
   input.value = ""; // Input field ko clear karte hain
 }
-
- /* function sendMessage() {
-    const text = input.value.trim();
-    if (!text) return;
-    if (!ws || ws.readyState !== WebSocket.OPEN) return;
-    ws.send(JSON.stringify({ type: "chat", room: "public", text }));
-    input.value = "";
-  updateMessageStatus(messageID, 'delivered');
-  }*/
-
   sendBtn.addEventListener("click", sendMessage);
   input.addEventListener("keydown", e => { if(e.key === "Enter") sendMessage(); });
+/* ================= SEND TYPING EVENT ================= */
+input.addEventListener("input", () => {
+  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+
+  if (!isTyping) {
+    isTyping = true;
+    ws.send(JSON.stringify({ type: "typing", isTyping: true }));
+  }
+
+  clearTimeout(typingTimeout);
+
+  typingTimeout = setTimeout(() => {
+    isTyping = false;
+    ws.send(JSON.stringify({ type: "typing", isTyping: false }));
+  }, 1200);
+});
 
   function handleWSMessage(event) {
     const data = JSON.parse(event.data);
@@ -350,6 +357,14 @@ if (data.type === "me") {
   window.currentAvatar = data.avatar || "";
   localStorage.setItem("chatUser", window.currentUser); // ✅ FIX
   return;
+}
+/* ================= RECEIVE TYPING ================= */
+if (data.type === "typing") {
+  if (data.isTyping) {
+    showTypingIndicator(data.name);
+  } else {
+    removeTypingIndicator();
+  }
 }
 
     if (data.type === "online-users") {
@@ -365,12 +380,9 @@ if (data.type === "me") {
       loadingHistory = false;
     }
 
-   /* if (data.type === "chat") {
-      addMessage(data.msg.user, data.msg.text, false, data.msg.time, data.msg._id, data.msg.reactions, data.msg.status || "server", data.msg.avatar);
-      updateMessageStatus(data.msg._id, 'seen');
-   }*/
 if (data.type === "chat") {
-    // Jab message aata hai, tum use add karte ho aur status ko "seen" mark karte ho
+   removeTypingIndicator();
+// Jab message aata hai, tum use add karte ho aur status ko "seen" mark karte ho
     addMessage(data.msg.user, data.msg.text, false, data.msg.time, data.msg._id, data.msg.reactions, data.msg.status || "server", data.msg.avatar);
     updateMessageStatus(data.msg._id, 'seen');  // Message ko "seen" mark kar rahe hain
   }
@@ -378,6 +390,44 @@ if (data.type === "chat") {
     if (data.type === "chat-update") updateMessage(data.msg);
     if (data.type === "status-update") updateMessageStatus(data.msgId, data.state);
   }
+/* ================= SHOW TYPING ================= */
+function showTypingIndicator(name) {
+  let existing = document.getElementById("typingIndicator");
+
+  if (!existing) {
+    const wrapper = document.createElement("div");
+    wrapper.className = "message-row";
+
+    const avatarSpacer = document.createElement("div");
+    avatarSpacer.className = "avatar-spacer";
+
+    const bubble = document.createElement("div");
+    bubble.id = "typingIndicator";
+//    bubble.className = "message received typing-indicator";
+    bubble.className = "message received typing-indicator neon"; // ✅ YAHAN class add hogi
+
+    bubble.innerHTML = `
+        <div class="typing-dots">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    `;
+
+    wrapper.appendChild(avatarSpacer);
+    wrapper.appendChild(bubble);
+
+    chat.appendChild(wrapper);
+    scrollToBottomSmooth();
+  }
+}
+
+function removeTypingIndicator() {
+  const el = document.getElementById("typingIndicator");
+  if (el && el.parentElement) {
+    el.parentElement.remove();
+  }
+}
 
   function updateNewMsgBtn() {
     if (unseenCount > 0) {
