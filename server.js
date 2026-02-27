@@ -97,7 +97,7 @@ const sessionMiddleware = session({
       httpOnly: true,
       secure: false,
       sameSite: "lax"
-    }*/  //localhost only
+    } */ //localhost only
 });
 
 app.use(sessionMiddleware);
@@ -210,11 +210,6 @@ wss.on("connection", (ws, req) => {
   ws.isAlive = true;
   ws.on("pong", () => (ws.isAlive = true));
 
-/*  sessionMiddleware(req, {}, async () => {
-    if (!req.session?.passport?.user) {
-      ws.close();
-      return;
-    }*/
 sessionMiddleware(req, {}, () => {
 
   passport.initialize()(req, {}, () => {
@@ -283,10 +278,6 @@ if (data.type === "typing") {
         if (!data.text?.trim()) return;
         if (data.text.length > 500) return;
 
-/*        const now = Date.now();
-        const lastTime = userLastMessage.get(id) || 0;
-        if (now - lastTime < 1000) return;
-        userLastMessage.set(id, now);*/
 const now = Date.now();
 const lastTime = userLastMessage.get(id) || 0;
 // Reduce throttle to 300ms
@@ -344,27 +335,38 @@ if (!userEmail) {
         return;
       }
 
-      /* ===== HISTORY ===== */
+      /* ===== HISTORY (WITH PAGINATION) ===== */
       if (data.type === "history") {
-const messages = await Message.find({ room })
-  .sort({ time: 1 })
-  .limit(500)
-  .lean();
+        const limit = 30; // Ek baar mein 30 messages mangwayenge
+        const beforeTime = data.beforeTime || Date.now(); // Agar beforeTime nahi hai toh abhi se shuru karein
 
-messages.forEach(m => {
-  if (!m.avatar) m.avatar = "";
-});
+        const messages = await Message.find({ 
+          room, 
+          time: { $lt: beforeTime } // Is time se purane messages
+        })
+        .sort({ time: -1 }) // Pehle latest purane (Reverse sort)
+        .limit(limit)
+        .lean();
+
+        // Wapas client ko bhejte waqt seedha kar denge (Chronological order)
+        messages.reverse();
+
+        messages.forEach(m => {
+          if (!m.avatar) m.avatar = "";
+        });
 
         ws.send(
           JSON.stringify({
             type: "history",
             room,
             messages,
+            isInitial: !data.beforeTime // Batayega ki ye pehli baar load hua hai ya scroll karne par
           })
         );
 
         return;
       }
+
 
       /* ===== SEEN ===== */
       if (data.type === "seen") {

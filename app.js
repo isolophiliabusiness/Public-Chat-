@@ -38,7 +38,8 @@ if(logoutBtn) {
   const MAX_MESSAGES_IN_DOM = 500;
   let ws;
   let reconnectDelay = 2000;
-  let oldestMessageId = null;
+ // let oldestMessageId = null;
+  let oldestMessageTime = null; // ID ki jagah ab time track karenge
   let retryCount = 0; // global at top
   const MAX_RETRIES = 10;
 
@@ -105,18 +106,12 @@ let isTyping = false;
   /* ================= WEBSOCKET ================= */
   function connectWS() {
     ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host);
-
     ws.onopen = () => {
       reconnectDelay = 2000;
       retryCount = 0;
-
-      if (!window.currentUser) {
-        const cachedUser = localStorage.getItem("chatUser");
-        if (cachedUser) window.currentUser = cachedUser;
-      }
-
       ws.send(JSON.stringify({ type: "join", room: "public", user: window.currentUser }));
-      ws.send(JSON.stringify({ type: "history", room: "public", beforeId: null }));
+      // Initial load ke liye beforeTime null bhejenge
+      ws.send(JSON.stringify({ type: "history", room: "public", beforeTime: null }));
     };
 
     ws.onmessage = handleWSMessage;
@@ -422,13 +417,34 @@ if (data.type === "typing") {
     }
 
     if (data.type === "history") {
-      if (data.messages.length > 0) oldestMessageId = data.messages[0]._id;
-      data.messages.reverse().forEach(msg => {
-        addMessage(msg.user, msg.text, true, msg.time, msg._id, msg.reactions, msg.status || "server", msg.avatar);
-      });
-      if (data.messages.length < 500) historyEndReached = true;
+      removeHistoryLoader(); // <--- Ye line add karo
+      // 1. Purani height save kar lo (Scroll freeze ke liye)
+      const oldScrollHeight = chat.scrollHeight;
+
+      if (data.messages.length > 0) {
+        // Sabse purane message ka time save karo agli request ke liye
+        oldestMessageTime = data.messages[0].time;
+
+        // Messages ko reverse karke addMessage call karo
+        // (Server ne already chronologically bhej diya hai, toh seedha loop chalao)
+        data.messages.forEach(msg => {
+          addMessage(msg.user, msg.text, true, msg.time, msg._id, msg.reactions, msg.status || "server", msg.avatar);
+        });
+
+        // 2. Scroll Position Maintain Karo (MAGIC STEP)
+        if (!data.isInitial) {
+          const newScrollHeight = chat.scrollHeight;
+          chat.scrollTop = newScrollHeight - oldScrollHeight;
+        }
+      }
+
+      // Agar messages 30 se kam aaye hain (Jo humne server pe limit rakhi hai), matlab aur history nahi hai
+      if (data.messages.length < 30) historyEndReached = true;
+
       loadingHistory = false;
+      historyLoaded = true;
     }
+
 
 if (data.type === "chat") {
    removeTypingIndicator();
@@ -499,6 +515,24 @@ function removeTypingIndicator() {
     el.parentElement.remove();
   }
 }
+ function showHistoryLoader() {
+   if (document.getElementById("historyLoader")) return;
+   const loader = document.createElement("div");
+   loader.id = "historyLoader";
+   loader.innerHTML = `
+  <div class="loader-capsule">
+    <div class="spinner"></div>
+    <span class="loader-text">Loading History...</span>
+  </div>
+`;
+
+   chat.prepend(loader); // Sabse upar dikhayenge
+ }
+
+ function removeHistoryLoader() {
+   const loader = document.getElementById("historyLoader");
+   if (loader) loader.remove();
+ }
 
   function updateNewMsgBtn() {
     if (unseenCount > 0) {
@@ -520,22 +554,31 @@ function removeTypingIndicator() {
 
     requestAnimationFrame(() => {
       const scrollTop = chat.scrollTop;
-      const scrollHeight = chat.scrollHeight;
-      const clientHeight = chat.clientHeight;
-
-      const atBottom = scrollHeight - scrollTop <= clientHeight + 5;
-      if (atBottom) { unseenCount = 0; updateNewMsgBtn(); }
-
-      const nearTop = scrollTop <= 80;
-      if (nearTop && !loadingHistory && !historyEndReached) {
-        if (!ws || ws.readyState !== WebSocket.OPEN) { scrollTicking = false; return; }
-        loadingHistory = true;
-        ws.send(JSON.stringify({ type: "history", room: "public", beforeId: oldestMessageId }));
+      const atBottom = chat.scrollHeight - scrollTop <= chat.clientHeight + 10;
+      
+      if (atBottom) { 
+        unseenCount = 0; 
+        updateNewMsgBtn(); 
       }
 
+      // Jab user top ke paas ho (80px), purani history mangwao
+      const nearTop = scrollTop <= 80;
+      if (nearTop && !loadingHistory && !historyEndReached) {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          loadingHistory = true;
+           showHistoryLoader(); // <--- Ye line add karo
+          // oldestMessageTime bhej rahe hain server ko
+          ws.send(JSON.stringify({ 
+            type: "history", 
+            room: "public", 
+            beforeTime: oldestMessageTime 
+          }));
+        }
+      }
       scrollTicking = false;
     });
   }, { passive: true });
+
 
   // Global click to close popups
   document.addEventListener("click", () => {

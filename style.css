@@ -1,13 +1,9 @@
-/* ===== GLOBAL ===== */
-body {
-  margin: 0;
-  overflow: hidden;
-  background: pink;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+/* ===== GLOBAL ===== */ body { margin: 0; overflow: 
+  hidden; background: #000; font-family: 'Inter', 
+  system-ui, -apple-system, sans-serif;
 }
 
-/* ===== HEADER BASE ===== */
-.chat-header {
+/* ===== HEADER BASE ===== */ .chat-header {
   position: relative;
   margin: 5px;
   padding: 12px 16px;
@@ -344,18 +340,6 @@ body {
   0% { opacity: 0; }
   100% { opacity: 1; }
 }
-/*.date-separator {
-  text-align: center;
-  margin: 15px 0;
-  font-size: 0.85rem;
-  color: #888;
-  font-weight: bold;
-}
-
-.date-wrapper {
-  display: flex;
-  justify-content: center;
-}*/
 
 /* ===== MODAL ===== */
 .modal-overlay {
@@ -677,3 +661,53 @@ position: absolute;
     opacity: 1;
   }
 }
+/* History Loader Style - Match with Date Separator */
+#historyLoader {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  clear: both;
+
+  /* --- Sticky Magic --- */
+  position: sticky; 
+  top: 0;           /* Ye ise chat box ke top edge par rok dega */
+  z-index: 999;     /* Messages aur date ke upar dikhne ke liye */
+  
+  /* Thoda sa gap taaki ekdum border se na chipke (optional) */
+  padding-top: 0px; 
+  pointer-events: none; /* Taaki scroll karne mein ungli ko disturb na kare */
+}
+/* Pill shape background jo Date separator se match karega */
+.loader-capsule {
+  background-color: rgba(0, 0, 0, 0.6);
+  padding: 5px 15px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  border: 1px solid rgba(0, 247, 255, 0.1);
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(0, 247, 255, 0.2);
+  border-top: 2px solid #00f7ff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-right: 10px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loader-text {
+  color: #00f7ff;
+  font-size: 13px;
+  font-family: 'Arial', sans-serif;
+  text-shadow: 0 0 5px #00f7ff;
+}
+
