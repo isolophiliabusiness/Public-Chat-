@@ -2,7 +2,7 @@
 body {
   margin: 0;
   overflow: hidden;
-  background: #000;
+  background: pink;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
@@ -318,27 +318,44 @@ body {
 }
 
 /* ===== DATE DISPLAY ===== */
-#dateDisplay {
-  font-size: 14px;
+.date-wrapper {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin: 15px 0;
+  clear: both;
+}
+
+.date-separator {
+  font-size: 13px;
   color: #00f7ff;
   background-color: rgba(0, 0, 0, 0.6);
-  padding: 1px 1px;
-  border-radius: 8px;
+  padding: 5px 15px;
+  border-radius: 20px;
   display: inline-block;
   font-family: 'Arial', sans-serif;
   text-align: center;
-  width: 40%;
-  position: fixed;
-  top: 68px;
-  left: 110px;
-  z-index: 10;
-  animation: dateFadeIn 1s ease-in-out;
+  z-index: 1;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
 }
+
 
 @keyframes dateFadeIn {
   0% { opacity: 0; }
   100% { opacity: 1; }
 }
+/*.date-separator {
+  text-align: center;
+  margin: 15px 0;
+  font-size: 0.85rem;
+  color: #888;
+  font-weight: bold;
+}
+
+.date-wrapper {
+  display: flex;
+  justify-content: center;
+}*/
 
 /* ===== MODAL ===== */
 .modal-overlay {

@@ -140,83 +140,68 @@ let isTyping = false;
 
   connectWS();
 
+/* ================= ADD MESSAGE ================= */
 function addMessage(user, text, isHistory = false, time = Date.now(), messageId = null, reactions = {}, status = "server", avatar = "") {
     if (messageId && renderedMessages.has(messageId)) return;
     if (messageId) renderedMessages.add(messageId);
 
     const isMe = (user || "").trim().toLowerCase() === (window.currentUser || "").trim().toLowerCase();
+    const wrapper = document.createElement("div");
+    wrapper.className = isMe ? "message-row me" : "message-row";
 
     // ----------------- DATE SEPARATOR -----------------
     const messageDate = new Date(time);
-    const messageDateStr = messageDate.toDateString(); // unique string per day
+    const messageDateStr = messageDate.toDateString();
 
-    // last date separator in chat
-    const lastDateSeparator = chat.querySelector(".date-separator:last-child")?.dataset?.date;
+    // Check if date separator already exists for this date
+    const existingDate = chat.querySelector(`.date-separator[data-date="${messageDateStr}"]`);
 
-    // Check if the message is from today, yesterday or an old date
-    if (messageDateStr !== lastDateSeparator) {
-        const dateWrapper = document.createElement("div");
-        dateWrapper.className = "date-separator";
-        dateWrapper.dataset.date = messageDateStr;
-
-        const today = new Date();
-        const yesterday = new Date();
-        yesterday.setDate(today.getDate() - 1);
-
-        // Show Today, Yesterday or the exact date
-        if (messageDate.toDateString() === today.toDateString()) {
-            dateWrapper.textContent = "Today";
-        } else if (messageDate.toDateString() === yesterday.toDateString()) {
-            dateWrapper.textContent = "Yesterday";
-        } else {
-            dateWrapper.textContent = messageDate.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
-        }
-
+    if (!existingDate) {
         const dateWrapperOuter = document.createElement("div");
         dateWrapperOuter.className = "date-wrapper";
-        dateWrapperOuter.appendChild(dateWrapper);
 
-        // WhatsApp-style scroll restore
+        const dateDiv = document.createElement("div");
+        dateDiv.className = "date-separator";
+        dateDiv.dataset.date = messageDateStr;
+
+        const now = new Date();
+        const yesterday = new Date(now.getTime() - 86400000);
+
+        if (messageDateStr === now.toDateString()) dateDiv.textContent = "Today";
+        else if (messageDateStr === yesterday.toDateString()) dateDiv.textContent = "Yesterday";
+        else dateDiv.textContent = messageDate.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
+
+        dateWrapperOuter.appendChild(dateDiv);
+
+
         if (isHistory) {
-            const anchor = getTopVisibleMessage();
-            const prevTop = anchor ? anchor.getBoundingClientRect().top : 0;
-            chat.prepend(dateWrapperOuter);  // For history messages, prepend
-            if (anchor) {
-                const newTop = anchor.getBoundingClientRect().top;
-                chat.scrollTop += newTop - prevTop; // Restore scroll position
-            }
+            // History me message se upar dikhane ke liye prepend use karein
+            chat.prepend(dateWrapperOuter);
         } else {
-            chat.appendChild(dateWrapperOuter);  // For new messages, append
+            chat.appendChild(dateWrapperOuter);
         }
+
     }
 
-    // ----------------- MESSAGE ELEMENT -----------------
-    const wrapper = document.createElement("div");
-    wrapper.className = isMe ? "message-row me" : "message-row";
 
     const div = document.createElement("div");
     if (messageId) div.dataset.id = messageId;
 
     const timeDiff = Math.abs(time - lastMessageTime);
     const isGrouped = lastMessageUser === user && timeDiff <= GROUP_TIME_LIMIT && !isHistory;
-
     div.className = (isMe ? "message sent" : "message received") + (isGrouped ? " grouped" : " new-group");
 
-    // avatar
     if (!isMe) {
         const avatarEl = document.createElement("img");
         avatarEl.className = "avatar";
-
         if (avatar) {
             avatarEl.src = avatar;
             avatarEl.onerror = () => { avatarEl.src = "/default-avatar.png"; };
         }
-
         if (isGrouped) avatarEl.classList.add("avatar-placeholder");
         wrapper.appendChild(avatarEl);
     }
 
-    // name
     if (!isGrouped) {
         const nameEl = document.createElement("div");
         nameEl.className = "name";
@@ -224,16 +209,13 @@ function addMessage(user, text, isHistory = false, time = Date.now(), messageId 
         div.appendChild(nameEl);
     }
 
-    // message text
     const msgEl = document.createElement("div");
     msgEl.className = "msg-text";
     msgEl.textContent = text;
     div.appendChild(msgEl);
 
-    // meta (time + status)
     const meta = document.createElement("div");
     meta.className = "message-meta";
-
     const timeEl = document.createElement("span");
     timeEl.className = "time";
     timeEl.textContent = formatTime(time);
@@ -252,7 +234,6 @@ function addMessage(user, text, isHistory = false, time = Date.now(), messageId 
 
     div.appendChild(meta);
 
-    // reactions
     const reactContainer = document.createElement("div");
     reactContainer.className = "reaction-popup";
     ["❤️","👍","😂","😮","😢"].forEach(emoji => {
@@ -275,7 +256,6 @@ function addMessage(user, text, isHistory = false, time = Date.now(), messageId 
     });
     div.appendChild(reactContainer);
 
-    // reaction popup events
     let pressTimer;
     function showReactionPopup() {
         document.querySelectorAll(".reaction-popup.show").forEach(el => el.classList.remove("show"));
@@ -289,46 +269,53 @@ function addMessage(user, text, isHistory = false, time = Date.now(), messageId 
             reactContainer.style.top = "auto";
         }
     }
+
     div.addEventListener("touchstart", () => { pressTimer = setTimeout(showReactionPopup, 600); });
     div.addEventListener("touchend", () => { clearTimeout(pressTimer); });
     div.addEventListener("mousedown", () => { pressTimer = setTimeout(showReactionPopup, 400); });
     div.addEventListener("mouseup", () => { clearTimeout(pressTimer); });
 
-    // append/prepend wrapper
-    const wasAtBottom = Math.abs(chat.scrollHeight - chat.scrollTop - chat.clientHeight) < 10;
+    wrapper.appendChild(div);
+
+    const wasAtBottom = Math.abs(chat.scrollHeight - chat.scrollTop - chat.clientHeight) < 50;
+
     if (isHistory) {
-        const anchor = getTopVisibleMessage();
-        const prevTop = anchor ? anchor.getBoundingClientRect().top : 0;
-        wrapper.appendChild(div);
-        chat.prepend(wrapper);
-        if (anchor) {
-            const newTop = anchor.getBoundingClientRect().top;
-            chat.scrollTop += newTop - prevTop; // Restore scroll position
+        chat.prepend(wrapper); // Purane messages top par jayenge
+    } else {
+        chat.appendChild(wrapper); // Naye messages bottom par jayenge
+    }
+
+    // Max messages limit (Optional, cleanup ke liye)
+    if (!isHistory && chat.children.length > 200) { 
+        chat.removeChild(chat.firstChild);
+    }
+
+    // --- SCROLL LOGIC ---
+    if (isHistory) {
+        // Agar pehli baar history load ho rahi hai toh bottom bhejo
+        if (typeof historyLoaded === 'undefined' || !historyLoaded) {
+            chat.scrollTop = chat.scrollHeight;
+            window.historyLoaded = true; // Global flag set kar diya
         }
     } else {
-        wrapper.appendChild(div);
-        chat.appendChild(wrapper);
-    }
-
-    // remove extra old messages
-    if (!isHistory) {
-        while (chat.children.length > MAX_MESSAGES_IN_DOM) {
-            chat.removeChild(chat.firstChild);
+        // Naya message aane par auto-scroll agar user bottom par hai ya khud ka message hai
+        if (wasAtBottom || isMe) {
+            setTimeout(() => {
+                chat.scrollTo({ top: chat.scrollHeight, behavior: 'smooth' });
+            }, 50);
+        } else {
+            // Agar user upar scroll karke baitha hai toh notification dikhao
+            if (typeof unseenCount !== 'undefined') {
+                unseenCount++;
+                if (typeof updateNewMsgBtn === 'function') updateNewMsgBtn();
+            }
         }
-    }
-
-    if (isHistory && !historyLoaded) {
-        scrollToBottomSmooth();
-        historyLoaded = true;
-    } else if (!isHistory) {
-        if (wasAtBottom) scrollToBottomSmooth();
-        else { unseenCount++; updateNewMsgBtn(); }
     }
 
     lastMessageUser = user;
-    lastMessageWasHistory = isHistory;
     lastMessageTime = time;
 }
+
 
   function updateMessage(msg) {
     const messageDiv = document.querySelector(`[data-id='${msg._id}']`);
