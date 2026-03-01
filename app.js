@@ -765,18 +765,27 @@ function removeTypingIndicator() {
      currentReplyData = null;
      document.getElementById("replyPreview").classList.add("hidden");
  };
-// Profile Modal Logic
-function openProfile(name, avatar, email) {
-    document.getElementById("modalName").textContent = name;
-    document.getElementById("modalAvatar").src = avatar || "/default-avatar.png";
-    document.getElementById("modalEmail").textContent = email || "Community Member";
-    document.getElementById("userModal").classList.remove("hidden");
-}
+/* ================= PROFILE MODAL LOGIC ================= */
+window.openProfile = function(name, avatar) {
+    const modal = document.getElementById("userModal");
+    const mName = document.getElementById("modalName");
+    const mAvatar = document.getElementById("modalAvatar");
+    const mEmail = document.getElementById("modalEmail");
 
-// Close karne ka logic
-document.getElementById("closeModal").onclick = () => {
-    document.getElementById("userModal").classList.add("hidden");
+    if (modal && mName && mAvatar) {
+        mName.textContent = name;
+        mAvatar.src = avatar || "logo.png";
+        mEmail.textContent = "Community Member"; // Baad mein email bhi pass kar sakte hain
+        modal.classList.remove("hidden");
+    }
 };
+
+const closeModalBtn = document.getElementById("closeModal");
+if (closeModalBtn) {
+    closeModalBtn.onclick = () => {
+        document.getElementById("userModal").classList.add("hidden");
+    };
+}
 
 
 });
