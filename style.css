@@ -853,4 +853,50 @@ position: absolute;
     border-top-left-radius: 0;
     border-top-right-radius: 0;
 }
+.reply-tag {
+    background: rgba(0, 0, 0, 0.2);
+    border-left: 3px solid #00f7ff;
+    padding: 4px 8px;
+    margin-bottom: 4px;
+    border-radius: 4px;
+    cursor: pointer;
+    max-width: 100%;
+    display: block;
+}
 
+/* Message highlight animation */
+.highlight-msg {
+    animation: flashHighlight 2s ease;
+}
+
+@keyframes flashHighlight {
+    0% { background-color: rgba(0, 247, 255, 0.5); transform: scale(1.02); }
+    100% { background-color: transparent; transform: scale(1); }
+}
+.reply-tag {
+    background: rgba(0, 0, 0, 0.2) !important;
+    border-left: 3px solid #00f7ff !important;
+    padding: 6px 10px !important;
+    margin-bottom: 8px !important;
+    border-radius: 8px !important;
+    cursor: pointer;
+    display: block !important;
+    max-width: 200px; /* Bubble se bahar na jaye */
+}
+
+.reply-tag small {
+    color: #00f7ff;
+    font-weight: bold;
+    display: block;
+    margin-bottom: 2px;
+}
+
+.reply-tag p {
+    margin: 0;
+    font-size: 12px;
+    color: #ccc;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+	

@@ -206,30 +206,33 @@ function addMessage(user, text, isHistory = false, time = Date.now(), messageId 
         nameEl.textContent = user || "Unknown";
         div.appendChild(nameEl);
     }
-    // --- REPLY UI IN CHAT BOX ---
+    // --- REPLY UI IN CHAT BOX (Line 210 - 232) ---
     if (replyTo) {
         const replyTag = document.createElement("div");
         replyTag.className = "reply-tag";
+        // Inline style add kar raha hoon taaki background aur border sahi dikhe
+        replyTag.style.background = "rgba(0, 0, 0, 0.3)";
+        replyTag.style.borderLeft = "4px solid #00f7ff";
+        replyTag.style.padding = "5px 8px";
+        replyTag.style.marginBottom = "8px";
+        replyTag.style.borderRadius = "6px";
+        replyTag.style.cursor = "pointer";
+
         replyTag.innerHTML = `
-            <small>@${replyTo.user}</small>
-            <p>${replyTo.text}</p>
+            <small style="color: #00f7ff; font-weight: bold; display: block; font-size: 0.75em;">@${replyTo.user}</small>
+            <p style="margin: 0; font-size: 0.85em; color: #eee; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;">${replyTo.text}</p>
         `;
 
         replyTag.onclick = () => {
             const target = document.querySelector(`[data-id='${replyTo.msgId}']`);
             if (target) {
-                // 1. Smooth scroll to message
                 target.scrollIntoView({ behavior: "smooth", block: "center" });
-
-                // 2. Highlight effect (Flash)
                 target.classList.add("highlight-msg");
-                setTimeout(() => {
-                    target.classList.remove("highlight-msg");
-                }, 2000); 
+                setTimeout(() => target.classList.remove("highlight-msg"), 2000);
             }
         };
         div.appendChild(replyTag);
-    } // <--- Ye brace tune miss kar diya tha!
+    }
 
 // --- PURANA IDENTICAL CODE HATAO AUR SIRF YE RAKHO ---
 const msgEl = document.createElement("span"); // ✅ 'div' ki jagah 'span' karo
@@ -487,18 +490,19 @@ function updateMessageStatus(msgId, state) {
 
 function sendMessage() {
   const text = input.value.trim();
+  // Agar text khali hai toh return kar jao
   if (!text || !ws || ws.readyState !== WebSocket.OPEN) return;
 
-  // Payload taiyar karo
+  // 1. Payload taiyar karo
   const payload = {
     type: "chat",
     room: "public",
     text: text,
-    messageId: Date.now() // Browser side track karne ke liye
+    messageId: Date.now() 
   };
 
-  // Agar user kisi ko reply de raha hai, toh pura object bhejo
-  if (currentReplyData) {
+  // 2. IMPORTANT: Agar user reply de raha hai, toh attach karo
+  if (currentReplyData && currentReplyData.msgId) {
     payload.replyTo = {
       msgId: currentReplyData.msgId,
       user: currentReplyData.user,
@@ -506,15 +510,21 @@ function sendMessage() {
     };
   }
 
+  // 3. Server ko bhejo
   ws.send(JSON.stringify(payload));
 
-  // Reset UI & State
-  input.value = ""; 
-  currentReplyData = null;
-  const preview = document.getElementById("replyPreview");
-  if (preview) preview.classList.add("hidden");
+  // 4. UI Clean up (Message bhejne ke baad hi reset karo)
+  input.value = "";
   
-  // Audio play (Optional if you want it here)
+  // Reply data clear karo taaki agla message normal jaye
+  currentReplyData = null; 
+  
+  // Preview hide karo
+  const preview = document.getElementById("replyPreview");
+  if (preview) {
+    preview.classList.add("hidden");
+  }
+
   if (typeof playSendSound === "function") playSendSound();
 }
 

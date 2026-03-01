@@ -71,6 +71,12 @@ const messageSchema = new mongoose.Schema({
   status: { type: String, default: "server" },
   avatar: { type: String, default: "" },
   isDeleted: { type: Boolean, default: false }, // <--- Ye add kar
+    // ✅ YE ADD KARO: Reply data save karne ke liye
+  replyTo: {
+    msgId: { type: String },
+    user: { type: String },
+    text: { type: String }
+  }
 });
 
 messageSchema.index({ room: 1, time: 1 });
@@ -324,15 +330,20 @@ if (!userEmail) {
   return;
 }
   const message = new Message({
-  room,
- user: req.user?.name || userEmail, // ✅ IMPORTANT FIX
-  text: cleanText,
-  time: now,
-  reactions: {},
-  status: "server",
-  avatar: req.user?.avatar || "",
-  replyTo: data.replyTo // ✅ Ye line add kar do
-});
+    room,
+    user: req.user?.name || userEmail,
+    text: cleanText,
+    time: now,
+    reactions: {},
+    status: "server",
+    avatar: req.user?.avatar || "",
+    // ✅ Safe way to handle reply data
+    replyTo: data.replyTo ? {
+      msgId: data.replyTo.msgId,
+      user: data.replyTo.user,
+      text: data.replyTo.text
+    } : null
+  });
 
         await message.save();
 
