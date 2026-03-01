@@ -267,139 +267,136 @@ msgEl.className = "msg-text";
     }
     div.appendChild(meta);
 
-    // --- REACTION POPUP ---
+    // --- REACTION POPUP (WhatsApp Style) ---
     const reactContainer = document.createElement("div");
     reactContainer.className = "reaction-popup";
 
-    // Yahan humne list thodi badi kar di hai taaki scroll feature kaam kare
-    ["❤️","👍","😂","😮","😢","🔥","👏"].forEach(emoji => {
+    const emojiList = ["❤️", "👍", "😂", "😮", "😢", "🔥", "👏", "🎉", "💯"];
+    emojiList.forEach(emoji => {
         const btn = document.createElement("span");
         btn.className = "reaction-emoji";
         btn.textContent = emoji;
-
+        
         const reactedUsers = reactions?.[emoji] || [];
         if (reactedUsers.includes(window.currentUser)) {
-            btn.style.background = "rgba(0,150,255,0.35)";
+            btn.style.background = "rgba(0, 247, 255, 0.25)";
             btn.style.borderRadius = "50%";
         }
+
         btn.onclick = (e) => {
             e.stopPropagation();
-            if (!messageId) return;
-            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            if (!messageId || !ws || ws.readyState !== WebSocket.OPEN) return;
             ws.send(JSON.stringify({ type: "react", room: "public", msgId: messageId, emoji }));
             reactContainer.classList.remove("show");
         };
         reactContainer.appendChild(btn);
     });
 
-    // --- DELETE & REPLY BUTTONS IN POPUP ---
-    if (isMe) {
-        const delBtn = document.createElement("span");
-        delBtn.className = "reaction-emoji delete-msg-btn";
-        delBtn.innerHTML = "🗑️";
-        delBtn.style.color = "#ff4d4d";
-        delBtn.onclick = (e) => {
-            e.stopPropagation();
-            if (confirm("Delete this message?")) {
-                ws.send(JSON.stringify({ type: "delete-msg", msgId: messageId }));
-            }
-            reactContainer.classList.remove("show");
-        };
-        reactContainer.appendChild(delBtn);
-    }
-
-    const replyBtn = document.createElement("span");
-    replyBtn.className = "reaction-emoji reply-msg-btn";
-    replyBtn.innerHTML = "↩️";
-    replyBtn.onclick = (e) => {
-        e.stopPropagation();
-        currentReplyData = { msgId: messageId, user: user, text: text };
-        document.getElementById("replyUser").textContent = user;
-        document.getElementById("replyText").textContent = text;
-        document.getElementById("replyPreview").classList.remove("hidden");
-        input.focus();
-        reactContainer.classList.remove("show");
-    };
-    reactContainer.appendChild(replyBtn);
-
+    // 🚩 IMPORTANT: reactContainer ko bubble mein add karo
     div.appendChild(reactContainer);
 
-    // --- POPUP SHOW LOGIC (Fixed for Scroll/WhatsApp Feel) ---
     function showReactionPopup() {
         document.querySelectorAll(".reaction-popup.show").forEach(el => el.classList.remove("show"));
-        reactContainer.classList.add("show");
-
         const rect = div.getBoundingClientRect();
-        // Screen ke bohot upar ho toh niche dikhao, warna upar
-        if (rect.top < 150) {
+        
+        // Vertical positioning
+        if (rect.top < 120) {
             reactContainer.style.top = "110%";
             reactContainer.style.bottom = "auto";
         } else {
             reactContainer.style.bottom = "120%";
             reactContainer.style.top = "auto";
         }
+
+        // Horizontal positioning
+        if (isMe) {
+            reactContainer.style.left = "auto";
+            reactContainer.style.right = "5px"; 
+        } else {
+            reactContainer.style.right = "auto";
+            reactContainer.style.left = "5px";
+        }
+
+        reactContainer.classList.add("show");
+        if (window.navigator.vibrate) window.navigator.vibrate(20);
     }
 
-    // Long Press Event Listeners
-//    div.addEventListener("touchstart", () => { pressTimer = setTimeout(showReactionPopup, 500); });
-  //  div.addEventListener("touchend", () => { clearTimeout(pressTimer); });
-    //div.addEventListener("mousedown", () => { pressTimer = setTimeout(showReactionPopup, 400); });
-  //  div.addEventListener("mouseup", () => { clearTimeout(pressTimer); });
-    // --- 343 Line se Start (REPLACING OLD LISTENERS) ---
-    // --- 349 Line se Start ---
     let touchStartX = 0;
-    let touchStartY = 0; // 👈 Yeh naya variable add karo
+    let touchStartY = 0;
     let touchMoveX = 0;
     let pressTimer;
 
     div.addEventListener("touchstart", (e) => {
         touchStartX = e.touches[0].clientX;
-        touchStartY = e.touches[0].clientY; // 👈 Start Y position save karo
-        touchMoveX = touchStartX; 
+        touchStartY = e.touches[0].clientY;
+        touchMoveX = touchStartX;
         pressTimer = setTimeout(showReactionPopup, 500);
     }, { passive: true });
-
+    /* --- ISKO REPLACE KARO (Line 336 to 363) --- */
     div.addEventListener("touchmove", (e) => {
-        touchMoveX = e.touches[0].clientX;
-        let touchMoveY = e.touches[0].clientY; // Current Y position
+        let currentX = e.touches[0].clientX;
+        let currentY = e.touches[0].clientY;
+        const diffX = currentX - touchStartX;
+        const diffY = currentY - touchStartY;
 
-        const diffX = touchMoveX - touchStartX;
-        const diffY = Math.abs(touchMoveY - touchStartY); // Vertical movement calculate karo
+        if (Math.abs(diffX) < 10 && Math.abs(diffY) < 10) return;
 
-        // 🔥 CRITICAL FIX: Agar user upar-neeche scroll kar raha hai (Vertical), 
-        // toh swipe ko cancel kar do
-        if (diffY > 15 || diffY > Math.abs(diffX)) {
+        if (Math.abs(diffY) > Math.abs(diffX)) {
             clearTimeout(pressTimer);
-            div.style.transform = "translateX(0px)"; // Bubble reset
-            return; // Yahin stop kar do
+            div.style.transform = "translateX(0px)";
+            return;
         }
 
-        // Agar user side mein swipe kar raha hai, toh long-press cancel
-        if (Math.abs(diffX) > 10) clearTimeout(pressTimer);
+        clearTimeout(pressTimer);
 
-        // Right swipe animation (Limit 80px tak)
-        if (diffX > 0 && diffX < 80) {
+        // ✅ NEW: Check if message is already deleted to prevent visual swipe
+        const isDeletedNow = text.includes("deleted") || div.querySelector(".msg-text")?.textContent.includes("deleted");
+
+        // Swipe limit visual feedback
+        if (diffX > 0 && diffX < 80) { // Right swipe (Reply) - Hamesha chalega
+            div.style.transform = `translateX(${diffX}px)`;
+            div.style.transition = "none";
+        } else if (diffX < 0 && diffX > -80 && isMe && !isDeletedNow) { // ✅ Left swipe (Delete) - Sirf tab jab delete na ho
             div.style.transform = `translateX(${diffX}px)`;
             div.style.transition = "none";
         }
+        
+        touchMoveX = currentX;
     }, { passive: true });
 
+
+    // Isko Line 368 se 412 ki jagah paste karein
     div.addEventListener("touchend", () => {
         clearTimeout(pressTimer);
         const diff = touchMoveX - touchStartX;
 
-        // 🔥 Threshold 90px rakha hai taaki "Fast Scroll" mein galti se trigger na ho
-        if (diff > 90) { 
+        // 1. Right Swipe -> Reply
+        if (diff > 70) {
             currentReplyData = { msgId: messageId, user: user, text: text };
-            document.getElementById("replyUser").textContent = user;
-            document.getElementById("replyText").textContent = text;
-            document.getElementById("replyPreview").classList.remove("hidden");
-            input.focus();
+            const replyUserEl = document.getElementById("replyUser");
+            const replyTextEl = document.getElementById("replyText");
+            const replyPreviewEl = document.getElementById("replyPreview");
 
-            if (window.navigator.vibrate) window.navigator.vibrate(15);
+            if (replyUserEl && replyTextEl && replyPreviewEl) {
+                replyUserEl.textContent = user;
+                replyTextEl.textContent = text;
+                replyPreviewEl.classList.remove("hidden");
+                input.focus();
+                if (window.navigator.vibrate) window.navigator.vibrate(15);
+            }
+        } 
+        // 2. Left Swipe -> Delete
+        else if (diff < -70 && isMe) {
+            const isAlreadyDeleted = text.includes("deleted") || div.querySelector(".msg-text")?.textContent.includes("deleted");
+            if (!isAlreadyDeleted) {
+                if (confirm("Delete for everyone?")) {
+                    ws.send(JSON.stringify({ type: "delete-msg", msgId: messageId }));
+                    if (window.navigator.vibrate) window.navigator.vibrate(20);
+                }
+            }
         }
 
-        // Reset bubble position smoothly
+        // ✅ Reset Position: Ye hamesha execute hoga, swipe freeze nahi hoga
         div.style.transition = "transform 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28)";
         div.style.transform = "translateX(0px)";
 
@@ -407,41 +404,31 @@ msgEl.className = "msg-text";
         touchMoveX = 0;
     });
 
-    // Mouse listeners for Desktop (Inhe aise hi rehne do)
-    div.addEventListener("mousedown", () => { pressTimer = setTimeout(showReactionPopup, 400); });
-    div.addEventListener("mouseup", () => { clearTimeout(pressTimer); });
-    // --- End of Swipe/Longpress Logic ---
-
     wrapper.appendChild(div);
 
     const wasAtBottom = Math.abs(chat.scrollHeight - chat.scrollTop - chat.clientHeight) < 50;
 
     if (isHistory) {
-        chat.prepend(wrapper); // Purane messages top par jayenge
+        chat.prepend(wrapper);
     } else {
-        chat.appendChild(wrapper); // Naye messages bottom par jayenge
+        chat.appendChild(wrapper);
     }
 
-    // Max messages limit (Optional, cleanup ke liye)
     if (!isHistory && chat.children.length > 200) { 
         chat.removeChild(chat.firstChild);
     }
 
-    // --- SCROLL LOGIC ---
     if (isHistory) {
-        // Agar pehli baar history load ho rahi hai toh bottom bhejo
         if (typeof historyLoaded === 'undefined' || !historyLoaded) {
             chat.scrollTop = chat.scrollHeight;
-            window.historyLoaded = true; // Global flag set kar diya
+            window.historyLoaded = true;
         }
     } else {
-        // Naya message aane par auto-scroll agar user bottom par hai ya khud ka message hai
         if (wasAtBottom || isMe) {
             setTimeout(() => {
                 chat.scrollTo({ top: chat.scrollHeight, behavior: 'smooth' });
             }, 50);
         } else {
-            // Agar user upar scroll karke baitha hai toh notification dikhao
             if (typeof unseenCount !== 'undefined') {
                 unseenCount++;
                 if (typeof updateNewMsgBtn === 'function') updateNewMsgBtn();
@@ -451,7 +438,7 @@ msgEl.className = "msg-text";
 
     lastMessageUser = user;
     lastMessageTime = time;
-}
+} // <--- Function closing brace
 
 
   function updateMessage(msg) {
@@ -500,32 +487,35 @@ function updateMessageStatus(msgId, state) {
 
 function sendMessage() {
   const text = input.value.trim();
-  if (!text) return;
-  if (!ws || ws.readyState !== WebSocket.OPEN) return;
-
-  const messageID = Date.now();
+  if (!text || !ws || ws.readyState !== WebSocket.OPEN) return;
 
   // Payload taiyar karo
   const payload = {
     type: "chat",
     room: "public",
     text: text,
-    messageId: messageID
+    messageId: Date.now() // Browser side track karne ke liye
   };
 
-  // Agar user kisi ko reply de raha hai, toh wo data bhi bhejo
+  // Agar user kisi ko reply de raha hai, toh pura object bhejo
   if (currentReplyData) {
-    payload.replyTo = currentReplyData;
+    payload.replyTo = {
+      msgId: currentReplyData.msgId,
+      user: currentReplyData.user,
+      text: currentReplyData.text
+    };
   }
 
   ws.send(JSON.stringify(payload));
 
+  // Reset UI & State
   input.value = ""; 
-
-  // Message bhejne ke baad reply mode band kar do
   currentReplyData = null;
   const preview = document.getElementById("replyPreview");
   if (preview) preview.classList.add("hidden");
+  
+  // Audio play (Optional if you want it here)
+  if (typeof playSendSound === "function") playSendSound();
 }
 
   sendBtn.addEventListener("click", sendMessage);

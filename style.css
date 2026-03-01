@@ -90,27 +90,28 @@
   border-radius: 999px;
   white-space: nowrap;
 }
-
+/* ===== ONLINE DOT ===== */
 .online-dot {
   display: inline-block;
-  width: 10px;
-  height: 10px;
-  background-color: #00ff7f;
+  width: 11px;
+  height: 11px;
+  /* Exact Fluorescent Green from image */
+  background-color: #00FF33; 
   border-radius: 50%;
-  margin-left: 6px;
+  margin-left: 0;
   vertical-align: middle;
-  animation: pulse 1.5s infinite;
-}
-
-.hidden {
-    display: none;
+  /* Border for the dot to pop out on dark bg */
+  border: 1.5px solid #000; 
+  box-shadow: 0 0 8px rgba(0, 255, 51, 0.6);
+  animation: pulse 2s infinite;
 }
 
 @keyframes pulse {
-  0% { transform: scale(0.8); opacity: 0.7; }
-  50% { transform: scale(1.2); opacity: 1; }
-  100% { transform: scale(0.8); opacity: 0.7; }
+  0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(0, 255, 51, 0.7); }
+  70% { transform: scale(1.1); box-shadow: 0 0 0 6px rgba(0, 255, 51, 0); }
+  100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(0, 255, 51, 0); }
 }
+
 
 .beta {
   background: #00f7ff;
@@ -150,7 +151,6 @@
   right: 0;
   padding-bottom: 22px;
 }
-
 .chat-bg {
   height: 100%;
   width: 100%;
@@ -170,71 +170,74 @@
 .chat::-webkit-scrollbar {
   width: 0;
 }
-
-/* ===== MESSAGE BASE ===== */
+/* 1. Message Bubble - Flexbox ko puri tarah hata kar block kiya */
 .message {
+  display: block !important; 
   width: fit-content;
   max-width: 75%;
-  padding: 10px 14px;
+  padding: 8px 10px 6px 12px;
   font-size: 14px;
-  line-height: auto;
   border-radius: 18px;
-  word-wrap: break-word;
-  display: flex;
-  flex-direction: column;
   position: relative;
-  overflow: visible; /* ✅ YAHAN ADD KARNA HAI */ 
+  word-wrap: break-word;
   backdrop-filter: blur(12px);
-/*  backdrop-filter: none;*/
-  transition: all 0.2s ease;
-  animation: fadeIn 0.25s cubic-bezier(.22,.61,.36,1);
+  animation: fadeIn 0.25s ease;
+  overflow: visible;
 }
-.message.received {
-  align-self: flex-start;
-  background: #121212; /* solid dark */
-  color: #eaeaea;
-  border: 1px solid rgba(255,255,255,0.06);
-  border-top-left-radius: 6px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.6);
+/* 2. Text Content - Ise inline rakna zaroori hai side-by-side ke liye */
+.msg-text {
+  display: inline; 
+  white-space: pre-wrap; 
+  word-wrap: break-word;
+  line-height: 1.5;
+  vertical-align: top;
 }
+
 .message.received .name {
   color: #8be9fd; /* soft cyan */
 }
 .message.sent {
   align-self: flex-end;
-  background: linear-gradient(135deg, #2dd4bf, #06b6d4);
-  color: #001414;
+  background: linear-gradient(145deg, #002B2E 0%, #005F5F 70%, #00FBFF 150%);
+  border: 1px solid rgba(0, 251, 255, 0.25);
+  color: #ffffff;
+  border-radius: 18px;
   border-top-right-radius: 6px;
-  box-shadow: 0 4px 14px rgba(45,212,191,0.35);
+  margin-right: 5px;
+  padding-right: 12px; /* Text ke liye jagah */
 }
-.message.sent .name {
-  display: none;
-  color: #003c3c; /* dark teal text */
+
+.message.received {
+  align-self: flex-start;
+  background: linear-gradient(180deg, #1C1D1F 0%, #17181A 50%, #121416 100%); 
+  color: #F2F5F7; 
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-top-left-radius: 6px;
+  border-radius: 18px;
+  margin-left: 5px;
 }
+
 /* different user gap */
 .message:not(.grouped) {
-  margin-top: 10px;
+  margin-top: 3px;
 }
 
 /* same user tight gap */
 .message.grouped {
   margin-top: 2px;
 }
-
-@keyframes fadeIn {
-  0% {
-    opacity: 0;
-    transform: translateY(14px) scale(0.92);
-  }
-  60% {
-    opacity: 1;
-    transform: translateY(-2px) scale(1.02);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+@keyframes flashHighlight {
+    0% { background-color: rgba(0, 247, 255, 0.4); transform: scale(1.02); }
+    50% { background-color: rgba(0, 247, 255, 0.2); }
+    100% { background-color: transparent; transform: scale(1); }
 }
+
+.highlight-msg {
+    animation: flashHighlight 1.5s ease-out;
+    border: 1px solid #00f7ff !important;
+    z-index: 100;
+}
+
 .name {
   font-weight: 600;
   font-size: 11px;
@@ -243,11 +246,14 @@
   color: #9aa5b1;
 }
 .timestamp {
-  font-size: 9px;
+  font-size: 10px;
   margin-top: 4px;
+  margin-left: 8px; /* Text se thodi doori */
   opacity: 0.7;
+  float: right; /* 🔥 Ye time ko text ke side mein shift karega */
+  position: relative;
+  bottom: -4px; /* Niche corner mein set karne ke liye */
 }
-
 .message.sent .timestamp {
   align-self: flex-end;
 /*  color: #000;*/
@@ -265,7 +271,7 @@
 .message.grouped {
   margin-top: 2px;
 }
-/* ===== INPUT BAR ===== */
+/* ===== INPUT BAR (Original Layout Maintained) ===== */
 .input-bar {
   position: fixed;
   bottom: 16px;
@@ -277,9 +283,10 @@
   align-items: center;
   gap: 10px;
   padding: 7px 11px;
-  background: #0e0e0e;
+  background: #0e0e0e; /* Original Background */
   border-radius: 30px;
   box-shadow: 0 8px 25px rgba(0,0,0,0.6);
+  /* Yahan koi extra z-index nahi taaki unread pointer distrub na ho */
 }
 
 .input-bar input {
@@ -295,22 +302,25 @@
   color: #888;
 }
 
+/* ===== SEND BUTTON (Soft Cyan Gradient & Smooth Animation) ===== */
 .input-bar button {
   width: 47px;
   height: 46px;
   border-radius: 50%;
   border: none;
   cursor: pointer;
-  background: #9E1B32;
-  color: #fff;
+  /* Red hatakar soft Cyan/Teal gradient */
+  background: linear-gradient(135deg, #005F5F 0%, #00FBFF 100%);
+  color: #001414;
   font-size: 18px;
-  transition: transform 0.15s ease, background 0.15s ease;
+  /* Transition ko soft kiya hai */
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .input-bar button:active {
-  transform: scale(0.9);
-  background: #9E1B32;
-  border-radius: 100%;
+  /* Ekdum soft scale effect bina kisi jhatke ke */
+  transform: scale(0.95);
+  filter: brightness(1.1);
 }
 
 /* ===== DATE DISPLAY ===== */
@@ -407,95 +417,6 @@
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
-}
-.reaction-popup {
-  position: absolute;
-  bottom: 0%;
-  left: -5%;
-  transform: translateX(-50%) scale(0.8);
-  background: #111;
-  border-radius: 25px;
-  padding: 6px 10px;
-  display: flex;
-  gap: 6px;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.4);
-  opacity: 0;
-  pointer-events: none;
-  transition: all 0.18s ease;
-  z-index: 5;
-}
-
-.reaction-popup.show {
-  opacity: 1;
-  transform: translateX(-50%) scale(1);
-  pointer-events: auto;
-}
-
-.reaction-emoji {
-  font-size: 20px;
-  cursor: pointer;
-  padding: 4px 6px;
-  border-radius: 50%;
-  transition: transform 0.12s ease, background 0.12s ease;
-}
-
-.reaction-emoji:hover {
-  background: rgba(255,255,255,0.12);
-  transform: scale(1.25);
-}
-
-.reaction-emoji.active {
-  background: rgba(0,150,255,0.35);
-}
-.message-meta {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 4px;
-  font-size: 11px;
-  margin-top: 4px;
-  opacity: 0.85;
-}
-/* Status positioning - Align both ticks at the same place */
-.status {
-    position: relative;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 0px;
-}
-
-/* Small tick (above big tick) */
-.tick.small {
-    position: absolute;
-    z-index: 2;
-    width: 12px;
-    height: 12px;
-    stroke-width: 2;
-    filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.3));
-    top: 0; /* Aligning the small tick to the center */
-}
-
-/* Big tick */
-.tick.big {
-    position: absolute;
-    z-index: 1;
-    width: 16px;
-    height: 16px;
-    stroke-width: 2;
-    opacity: 0.7;
-    top: 0; /* Aligning big tick behind small tick */
-}
-
-/* When the message is seen (color change for big tick) */
-.status.seen .tick.small {
-    stroke: #2dd4bf; /* Greenish blue for seen tick */
-    filter: drop-shadow(0 0 3px rgba(45,212,191,0.6));
-}
-
-.status.seen .tick.big {
-    stroke: #2dd4bf; /* Same greenish blue for the big tick */
-    opacity: 1;
 }
 /* grouped messages tight */
 .message.grouped {
@@ -673,7 +594,7 @@ position: absolute;
   position: sticky; 
   top: 0;           /* Ye ise chat box ke top edge par rok dega */
   z-index: 999;     /* Messages aur date ke upar dikhne ke liye */
-  
+
   /* Thoda sa gap taaki ekdum border se na chipke (optional) */
   padding-top: 0px; 
   pointer-events: none; /* Taaki scroll karne mein ungli ko disturb na kare */
@@ -710,4 +631,209 @@ position: absolute;
   font-family: 'Arial', sans-serif;
   text-shadow: 0 0 5px #00f7ff;
 }
+/* 3. Time & Ticks Container - Float magic yahi hai */
+.message-meta {
+  display: inline-flex !important; 
+  float: right; 
+  align-items: center;
+  gap: 3px;
+  margin-left: 10px;
+  margin-top: 6px; /* Text ke sath balance karne ke liye */
+  position: relative;
+  bottom: -2px;
+  white-space: nowrap;
+  vertical-align: bottom;
+  pointer-events: none;
+}
+.message.sent .name {
+  display: none;
+  color: #003c3c; /* dark teal text */
+}
+
+/* 4. Timestamp Reset - Purane flex logic ko block karne ke liye */
+.timestamp, .time {
+  font-size: 10px;
+  opacity: 0.7;
+  margin: 0 !important;
+  align-self: auto !important; 
+  display: inline-block;
+}
+
+/* 5. Natural Ticks Overlap (Pixel Perfect WhatsApp Style) */
+.status {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 16px; 
+  height: 12px;
+}
+
+.tick {
+  position: absolute;
+  fill: none;
+  stroke-width: 2.8;
+}
+
+.tick.big {
+  width: 11px;
+  height: 11px;
+  left: 0;
+  stroke: rgba(255, 255, 255, 0.4);
+}
+
+.tick.small {
+  width: 11px;
+  height: 11px;
+  left: 5px; /* Perfect overlap */
+  stroke: rgba(255, 255, 255, 0.4);
+}
+
+/* Blue tick color - status.seen ke liye */
+.status.seen .tick.small,
+.status.seen .tick.big {
+  stroke: #53bdeb;
+}
+
+/* 6. Layout Fix - Float use karne ke baad bubble stretch karne ke liye */
+.message::after {
+  content: "";
+  display: table;
+  clear: both;
+}
+/* Swipe animation ke liye bubble ko smooth banao */
+.message {
+    transition: transform 0.1s ease-out; /* Smooth slide back */
+    will-change: transform;
+}
+
+/* Swipe indicator jo piche dikhega (Optional but cool) */
+.swipe-indicator {
+    position: absolute;
+    right: -40px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 18px;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+}
+/* ===== UPDATED REPLY PREVIEW (THEME MATCHED) ===== */
+.reply-preview {
+    background: #17181A; /* Received message jaisa charcoal background */
+    border-left: 4px solid #00f7ff; /* Neon Teal accent */
+    padding: 10px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative; 
+    
+    /* 🔥 Positioning Fix */
+    top: -8px; 
+    z-index: 10;
+    width: 100%;
+    box-sizing: border-box;
+    
+    /* Design tweaks */
+    border-radius: 12px 12px 0 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.3);
+    gap: 12px;
+}
+
+.reply-content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+#replyUser { 
+    color: #00f7ff; /* Neon teal for username */
+    font-weight: 600; 
+    font-size: 12px; 
+    margin-bottom: 2px;
+    display: block; 
+}
+
+#replyText { 
+    color: #9aa5b1; /* Soft grey text like your 'name' class */
+    font-size: 13px; 
+    margin: 0; 
+    white-space: nowrap; 
+    overflow: hidden; 
+    text-overflow: ellipsis; 
+}
+
+#cancelReply { 
+    background: rgba(255, 255, 255, 0.05); 
+    border: none; 
+    color: #ff4d4d; 
+    font-size: 18px; 
+    cursor: pointer;
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    flex-shrink: 0;
+    transition: all 0.2s;
+}
+
+#cancelReply:hover {
+    background: rgba(255, 77, 77, 0.2);
+}
+
+
+
+.chat {
+    overflow-x: hidden; /* Messages side mein nahi bhagenge */
+    display: flex;
+    flex-direction: column;
+}
+/* WhatsApp Style Popup Positioning */
+.reaction-popup {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #1c1c1c; 
+    padding: 6px 12px;
+    border-radius: 30px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.7);
+    border: 1px solid rgba(0, 247, 255, 0.15);
+    position: absolute;
+    z-index: 1000;
+    width: fit-content;
+    white-space: nowrap;
+    visibility: hidden;
+    opacity: 0;
+    transform: scale(0.8);
+    transition: all 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+.reaction-popup.show {
+    visibility: visible;
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* RECEIVED: Left se start hoga */
+.message.received .reaction-popup {
+    left: 5px;
+    transform-origin: left bottom;
+}
+
+/* SENT: Right se start hoga */
+.message.sent .reaction-popup {
+    right: 5px;
+    transform-origin: right bottom;
+}
+
+.reaction-emoji {
+    font-size: 19px;
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+.reaction-emoji:hover { transform: scale(1.3); }
 

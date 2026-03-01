@@ -69,7 +69,8 @@ const messageSchema = new mongoose.Schema({
   time: { type: Number, index: true },
   reactions: { type: Map, of: [String], default: {} },
   status: { type: String, default: "server" },
- avatar: { type: String, default: "" },
+  avatar: { type: String, default: "" },
+  isDeleted: { type: Boolean, default: false }, // <--- Ye add kar
 });
 
 messageSchema.index({ room: 1, time: 1 });
@@ -87,17 +88,17 @@ const sessionMiddleware = session({
     mongoUrl: MONGO_URI,
     ttl: 14 * 24 * 60 * 60,
   }),
-  cookie: {
+ /* cookie: {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite:
       process.env.NODE_ENV === "production" ? "none" : "lax",
-  },
-/* cookie: {
+  },*/
+ cookie: {
       httpOnly: true,
       secure: false,
       sameSite: "lax"
-    } */ //localhost only
+    }  //localhost only
 });
 
 app.use(sessionMiddleware);
@@ -272,6 +273,34 @@ if (data.type === "typing") {
   });
   return;
 }
+      /* ===== DELETE MESSAGE ===== */
+      if (data.type === "delete-msg") {
+        const msg = await Message.findById(data.msgId);
+        if (!msg) return;
+
+        // Security: Sirf owner ya admin delete kar sake
+        const isOwner = msg.user === (req.user?.name || req.user?.email);
+        const isAdmin = req.user?.role === "admin";
+
+        if (isOwner || isAdmin) {
+          msg.text = "🚫 This message was deleted";
+          msg.isDeleted = true;
+          await msg.save();
+
+          // Frontend (app.js) iska wait kar raha hai
+          const deleteNotice = JSON.stringify({
+            type: "msg-deleted",
+            msgId: data.msgId
+          });
+
+          wss.clients.forEach((client) => {
+            if (client.readyState === WebSocket.OPEN) {
+              client.send(deleteNotice);
+            }
+          });
+        }
+        return;
+      }
 
       /* ===== CHAT ===== */
       if (data.type === "chat") {
@@ -301,7 +330,8 @@ if (!userEmail) {
   time: now,
   reactions: {},
   status: "server",
-  avatar: req.user?.avatar || ""
+  avatar: req.user?.avatar || "",
+  replyTo: data.replyTo // ✅ Ye line add kar do
 });
 
         await message.save();
@@ -351,9 +381,16 @@ if (!userEmail) {
         // Wapas client ko bhejte waqt seedha kar denge (Chronological order)
         messages.reverse();
 
-        messages.forEach(m => {
-          if (!m.avatar) m.avatar = "";
-        });
+// Line 383 ke paas
+messages.forEach(m => {
+  if (!m.avatar) m.avatar = "";
+  
+  // ✅ Add this: Agar DB mein deleted hai, toh client ko original text mat bhejo
+  if (m.isDeleted) {
+    m.text = "🚫 This message was deleted";
+  }
+});
+
 
         ws.send(
           JSON.stringify({

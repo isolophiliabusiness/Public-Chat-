@@ -4,3 +4,6 @@ logs/
 ssl/
 data/
 data-dev/
+.cache/
+.thumbnails/
+
