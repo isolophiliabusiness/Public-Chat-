@@ -837,3 +837,20 @@ position: absolute;
 }
 .reaction-emoji:hover { transform: scale(1.3); }
 
+/* Taaki bina reply ke ye box na dikhe */
+.hidden {
+    display: none !important;
+}
+
+/* WhatsApp style rounding: Jab preview khula ho toh niche ke corners round honge upar ke flat */
+#replyPreview:not(.hidden) {
+    display: flex !important; /* JS remove class karega tabhi dikhega */
+    border-radius: 20px 20px 0 0; /* Upar round, niche flat */
+    margin-bottom: -5px; /* Input bar se chipkaane ke liye */
+}
+
+#replyPreview:not(.hidden) + .input-bar {
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+}
+

@@ -68,16 +68,26 @@
 
     </div>
   </div>
+  <div class="input-container" style="position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); width: calc(100% - 24px); max-width: 480px; z-index: 1000;">
+    
+    <div id="replyPreview" class="reply-preview hidden">
+        <div class="reply-content">
+            <span id="replyUser"></span>
+            <p id="replyText"></p>
+        </div>
+        <button id="cancelReply">×</button>
+    </div>
 
-  <div class="input-bar">
-    <input type="text" id="messageInput" placeholder="Type a message..."/>
-     <div class="sendBtn">
-    <button id="sendBtn"><!--➤</button>-->
-   <i class="fa-solid fa-paper-plane"></i>
-  </button>
-  </div> 
-</div>  <!--for testing only -->
-  <!-- Scroll-to-bottom button -->
+    <div class="input-bar" style="position: relative; bottom: 0; left: 0; transform: none; width: 100%;">
+        <input type="text" id="messageInput" placeholder="Type a message..."/>
+        <div class="sendBtn">
+            <button id="sendBtn">
+                <i class="fa-solid fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+  </div>
+
 <script src="/app.js"></script>
 </body>
 </html>
