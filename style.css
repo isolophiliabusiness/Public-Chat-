@@ -3,22 +3,76 @@
   system-ui, -apple-system, sans-serif;
 }
 
-/* ===== HEADER BASE ===== */ .chat-header {
+/* ===== HEADER BASE (LAYOUT PRESERVED - COLOR UPDATED) ===== */
+.chat-header {
   position: relative;
   margin: 5px;
   padding: 12px 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background:#222;
-  position:sticky;
-  top:0;
-  z-index:10;
+  
+  /* Color Update: Background ko thoda contrast diya taaki background se alag dikhe */
+  background: rgba(26, 28, 30, 0.75); 
+  
+  /* Border: Landing page vibe ke liye halka neon touch */
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(0, 247, 255, 0.2); 
+  
+  /* Shadow: Depth dene ke liye */
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  
+  position: sticky;
+  top: 0;
+  z-index: 10;
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border-radius: 22px;
   overflow: hidden;
 }
+
+/* ===== SHIMMERING NEON TITLE (MODIFIED) ===== */
+.title-row h1 {
+  font-family: 'Michroma', sans-serif;
+  font-weight: 900;
+  text-transform: uppercase;
+  
+  /* --- Step 1: Complex Gradient banaya (White-Cyan-White) --- */
+  background: linear-gradient(
+    to right, 
+    #ffffff 20%,   /* Shuru mein White */
+    #00f7ff 40%,   /* Beech mein Cyan (Roshni) */
+    #00f7ff 60%,   /* Cyan thoda lamba rahe */
+    #ffffff 80%    /* End mein wapas White */
+  );
+  
+  /* --- Step 2: Background size bada kiya (Isse gradient shift hoga) --- */
+  background-size: 200% auto;
+  
+  /* --- Step 3: Text Clip (Zaroori hai) --- */
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  
+  /* --- Step 4: Subtle Glow dalo --- */
+  filter: drop-shadow(0 0 5px rgba(0, 247, 255, 0.4));
+  
+  /* --- Step 5: Animation trigger karo (Smooth & Linear) --- */
+  animation: shineTitle 3s linear infinite;
+  
+  /* Tera baki code (font-size wagera) yahan rahega */
+  font-size: 14px; 
+  letter-spacing: 1px;
+}
+
+/* ===== TEXT SHINE KEYFRAMES ===== */
+@keyframes shineTitle {
+  to {
+    /* Gradient position ko shift kar diya */
+    background-position: 200% center; 
+  }
+}
+
 
 .chat-header::after {
   content: "";
@@ -31,6 +85,7 @@
   box-shadow: 0 0 10px rgba(0,247,255,0.6);
   pointer-events: none;
 }
+
 
 /* ===== LEFT SIDE ===== */
 .header-left {
