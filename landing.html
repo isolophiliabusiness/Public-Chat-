@@ -116,29 +116,42 @@
             0%, 100% { transform: scale(1); box-shadow: 0 0 20px rgba(0, 247, 255, 0.4); }
             50% { transform: scale(1.05); box-shadow: 0 0 10px rgba(0, 247, 255, 0.7); }
         }
+
 h1 {
-    font-family: 'Michroma', sans-serif; /* Futuristic & Bold Font */
+    font-family: 'Michroma', sans-serif;
     font-weight: 900;
-    font-size: 28px; /* Thoda bada aur bold */
-    letter-spacing: 2px; /* Elite spacing */
+    font-size: 28px;
+    letter-spacing: 2px;
     margin: 0;
     text-transform: uppercase;
     
-    /* Designer Gradient Effect */
-    background: linear-gradient(to bottom, #fff 40%, #00f7ff 100%);
+    /* Ultra Smooth Gradient Blending */
+    background: linear-gradient(
+        to right, 
+        #ffffff 0%, 
+        #00f7ff 25%, 
+        #0074D9 50%, 
+        #00f7ff 75%, 
+        #ffffff 100%
+    );
+    
+    /* Size 200% is enough for a smooth loop */
+    background-size: 200% auto; 
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
-}    
-h1 {
-    background: linear-gradient(to right, #fff 20%, #00f7ff 50%, #fff 80%);
-    background-size: 200% auto;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    animation: shine 4s linear infinite;
+    
+    /* Combined Animation: Fade-in + Slow Shine (6 seconds) */
+    opacity: 0;
+    animation: 
+        contentFade 1.2s ease-out 0.9s forwards, 
+        shine 6s linear infinite !important;
 }
 
+/* Silk Smooth Movement */
 @keyframes shine {
-    to { background-position: 200% center; }
+    0% { background-position: 0% center; }
+    100% { background-position: 200% center; }
 }
 
 
