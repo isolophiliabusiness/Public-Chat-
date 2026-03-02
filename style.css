@@ -96,7 +96,7 @@ input, textarea {
   bottom: 0; 
   left: 15%;
   width: 70%;
-  height: 1.5px;
+  height: 0.2px;
   
   background: linear-gradient(90deg, transparent, #00f7ff, transparent);
   box-shadow: 0 0 10px rgba(0,247,255,0.6);
