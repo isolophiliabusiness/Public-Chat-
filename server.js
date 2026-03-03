@@ -78,8 +78,10 @@ mongoose
 const messageSchema = new mongoose.Schema({
   room: { type: String, required: true },
   user: { type: String, required: true },
+  email: { type: String }, // ✅ YE ZAROORI HAI
   text: { type: String, required: true, maxlength: 500 },
   time: { type: Number, index: true },
+  role: { type: String, default: "user" }, // ✅ YE LINE ADD KARO
   reactions: { type: Map, of: [String], default: {} },
   status: { type: String, default: "server" },
   avatar: { type: String, default: "" },
@@ -95,6 +97,15 @@ const messageSchema = new mongoose.Schema({
 messageSchema.index({ room: 1, time: 1 });
 
 const Message = mongoose.model("Message", messageSchema);
+
+/* ================= BAN MODEL ================= */
+const banSchema = new mongoose.Schema({
+  email: { type: String, unique: true }, // Email se ban karna best hai
+  name: String,
+  reason: { type: String, default: "Violation of rules" },
+  bannedAt: { type: Date, default: Date.now }
+});
+const BannedUser = mongoose.model("BannedUser", banSchema);
 
 /* ================= SESSION ================= */
 app.set("trust proxy", 1);
@@ -263,31 +274,48 @@ wss.on("connection", (ws, req) => {
 sessionMiddleware(req, {}, () => {
 
   passport.initialize()(req, {}, () => {
-    passport.session()(req, {}, () => {
+    passport.session()(req, {}, async () => { // <--- Yahan 'async' add kiya
 
       if (!req.user) {
         ws.close();
         return;
       }
 
-ws.send(JSON.stringify({
-  type: "me",
-  email: req.user.email,
-  name: req.user.name,   // ✅ ADD THIS
-  avatar: req.user.avatar
-}));
+      // ✅ BAN CHECK: Check if user is in Banned list
+      const isBanned = await BannedUser.findOne({ email: req.user.email });
+      if (isBanned) {
+        ws.send(JSON.stringify({ 
+          type: "error", 
+          message: "🚫 You are permanently banned from this chat." 
+        }));
+        setTimeout(() => ws.close(), 1000); // Thoda time do message dikhne ka
+        return;
+      }
 
-    const id = deviceId(req);
-    sockets.set(ws, { id, room: "public" });
 
-    // User ka data map mein daalo
-    onlineUsersData.set(id, {
-      name: req.user.name,
-      avatar: req.user.avatar,
-      email: req.user.email
-    });
+      // --- IDENTITY & REGISTRATION ---
+      ws.send(JSON.stringify({
+        type: "me",
+        email: req.user.email,
+        name: req.user.name,
+        avatar: req.user.avatar,
+        role: req.user.role || "user" 
+      }));
 
-    emitOnlineUsers();
+      // Generate a truly unique ID for this specific connection
+      const socketId = require('crypto').randomUUID(); 
+      sockets.set(ws, { id: socketId, room: "public" });
+
+      // Sidebar data mein save karo
+      onlineUsersData.set(socketId, {
+        name: req.user.name,
+        avatar: req.user.avatar,
+        email: req.user.email,
+        role: req.user.role || "user"
+      });
+
+      emitOnlineUsers();
+
 
     ws.on("message", async (raw) => {
       let data;
@@ -336,7 +364,8 @@ if (data.type === "typing") {
 
         // Security: Sirf owner ya admin delete kar sake
         const isOwner = msg.user === (req.user?.name || req.user?.email);
-        const isAdmin = req.user?.role === "admin";
+//        const isAdmin = req.user?.role === "admin";
+          const isAdmin = req.user?.role === "admin" || req.user?.email === process.env.ADMIN_EMAIL;
 
         if (isOwner || isAdmin) {
           msg.text = "🚫 This message was deleted";
@@ -358,8 +387,115 @@ if (data.type === "typing") {
         return;
       }
 
+/* ===== ADMIN ACTIONS (KICK/BAN) - UPDATED ===== */
+if (data.type === "admin-action") {
+    console.log(`Admin action received: ${data.action} on ${data.targetEmail}`);
+
+    if (!req.user || req.user.role !== "admin") {
+        return ws.send(JSON.stringify({ type: "error", message: "🚫 Permission Denied." }));
+    }
+
+    const targetEmail = data.targetEmail;
+    const targetName = data.targetName;
+    const action = data.action;
+// 🔥 OWNER PROTECTION: Admin khud ke baap (Owner) ko touch nahi kar sakta
+    if (targetEmail === process.env.ADMIN_EMAIL) {
+        return ws.send(JSON.stringify({ 
+            type: "error", 
+            message: "🤣 Aukat mein reh! You cannot action the Owner." 
+        }));
+    }
+
+    // 📢 SABKO BATANE WALA LOGIC (Broadcast)
+    const broadcastSystemMessage = (text) => {
+        wss.clients.forEach(client => {
+            if (client.readyState === WebSocket.OPEN) {
+                client.send(JSON.stringify({
+                    type: "chat",
+                    msg: {
+                        user: "SYSTEM",
+                        text: text,
+                        time: Date.now(),
+                        role: "system",
+                        avatar: "https://cdn-icons-png.flaticon.com/512/1041/1041916.png"
+                    }
+                }));
+            }
+        });
+    };
+    if (action === "kick" || action === "ban") {
+        const msgText = action === "kick"
+            ? `📢 Admin has kicked ${targetName} from the chat!`
+            : `🚫 JUSTICE SERVED: ${targetName} has been PERMANENTLY BANNED!`;
+
+        broadcastSystemMessage(msgText);
+
+        if (action === "ban") {
+            await BannedUser.findOneAndUpdate(
+                { email: targetEmail },
+                { email: targetEmail, name: targetName, reason: "Banned by Admin" },
+                { upsert: true }
+            );
+        }
+
+        // Target user ko dhoondh kar laat maaro
+        wss.clients.forEach(client => {
+            const clientData = sockets.get(client);
+            const clientEmail = onlineUsersData.get(clientData?.id)?.email;
+
+            if (clientEmail === targetEmail) {
+                client.send(JSON.stringify({
+                    type: action === "kick" ? "kick-notice" : "ban-notice",
+                    reason: "Admin action performed."
+                }));
+                setTimeout(() => client.terminate(), 500);
+            }
+        });
+    } 
+    else if (action === "unban") {
+        // Database se hatao
+        const result = await BannedUser.findOneAndDelete({ email: targetEmail });
+        
+        if (result) {
+            broadcastSystemMessage(`✅ Admin has unbanned ${targetName}. Welcome back!`);
+        }
+
+        // 🔥 Admin ka UI update karne ke liye fresh list bhejo
+        const updatedList = await BannedUser.find({});
+        ws.send(JSON.stringify({ 
+            type: "ban-list", 
+            users: updatedList 
+        }));
+    }
+
+    emitOnlineUsers();
+    return;
+}
+
+
+      /* ===== GET BAN LIST (FOR ADMIN ONLY) ===== */
+      if (data.type === "get-ban-list") {
+        if (!req.user || req.user.role !== "admin") return;
+        
+        const bannedUsers = await BannedUser.find({});
+        ws.send(JSON.stringify({
+          type: "ban-list",
+          users: bannedUsers
+        }));
+        return;
+      }
+
+
       /* ===== CHAT ===== */
       if (data.type === "chat") {
+        // 🛡️ SECURITY GUARD: Check if user is banned before doing anything
+        const isBanned = await BannedUser.findOne({ email: req.user?.email });
+        if (isBanned) {
+          ws.send(JSON.stringify({ type: "error", message: "🚫 Action denied. You are banned." }));
+          setTimeout(() => ws.terminate(), 500);
+          return;
+        }
+
         if (!data.text?.trim()) return;
         if (data.text.length > 500) return;
 
@@ -382,8 +518,10 @@ if (!userEmail) {
   const message = new Message({
     room,
     user: req.user?.name || userEmail,
+    email: userEmail, // ✅ YE LINE ADD KARO (Taaki Admin ban kar sake)
     text: cleanText,
     time: now,
+    role: req.user?.role || "user", // ✅ YE LINE ADD KARO (Database me save hoga)
     reactions: {},
     status: "server",
     avatar: req.user?.avatar || "",
@@ -406,14 +544,18 @@ if (!userEmail) {
               JSON.stringify({
                 type: "chat",
                 room,
-                msg: message,
+                msg: {
+                  ...message.toObject(),
+                  role: req.user?.role || "user" // ✅ Message ke saath role chipka diya
+                },
               })
             );
           }
+
         });
 
         message.status = "delivered";
-        await message.save();
+       await message.save();	
 
         ws.send(
           JSON.stringify({
@@ -428,37 +570,34 @@ if (!userEmail) {
 
       /* ===== HISTORY (WITH PAGINATION) ===== */
       if (data.type === "history") {
-        const limit = 30; // Ek baar mein 30 messages mangwayenge
-        const beforeTime = data.beforeTime || Date.now(); // Agar beforeTime nahi hai toh abhi se shuru karein
+       if (!req.user) return ws.close(); // 🛡️ Add this line
+        const limit = 30; 
+        const beforeTime = data.beforeTime || Date.now(); 
 
-        const messages = await Message.find({ 
-          room, 
-          time: { $lt: beforeTime } // Is time se purane messages
+        let messages = await Message.find({
+          room,
+          time: { $lt: beforeTime } 
         })
-        .sort({ time: -1 }) // Pehle latest purane (Reverse sort)
+        .sort({ time: -1 }) 
         .limit(limit)
         .lean();
 
-        // Wapas client ko bhejte waqt seedha kar denge (Chronological order)
+        // 1. Array ko sirf EK BAAR reverse karo taaki chronological order mile
         messages.reverse();
 
-// Line 383 ke paas
-messages.forEach(m => {
-  if (!m.avatar) m.avatar = "";
-
-  // ✅ Add this: Agar DB mein deleted hai, toh client ko original text mat bhejo
-  if (m.isDeleted) {
-    m.text = "🚫 This message was deleted";
-  }
-});
-
+        // 2. Data format karo (isDeleted check)
+        messages = messages.map(m => {
+          if (m.isDeleted) m.text = "🚫 This message was deleted";
+          // role ab m object ke andar database se pehle hi maujood hai
+          return m;
+        });
 
         ws.send(
           JSON.stringify({
             type: "history",
             room,
             messages,
-            isInitial: !data.beforeTime // Batayega ki ye pehli baar load hua hai ya scroll karne par
+            isInitial: !data.beforeTime 
           })
         );
 
@@ -489,65 +628,47 @@ messages.forEach(m => {
 
       /* ===== REACTION ===== */
       if (data.type === "react") {
-        if (typeof data.emoji !== "string" || data.emoji.length > 10)
-          return;
+        const userEmail = req.user?.email;
+        if (!userEmail || !data.emoji) return;
 
-const userEmail = req.user?.email;
-if (!userEmail) return;
-const msg = await Message.findById(data.msgId);
+        const msg = await Message.findById(data.msgId);
         if (!msg || msg.room !== room) return;
 
-        msg.reactions = msg.reactions || new Map();
-
-if (!(msg.reactions instanceof Map)) {
-    try {
-        msg.reactions = new Map(Object.entries(msg.reactions));
-    } catch {
-        msg.reactions = new Map();
-    }
-}
-
-        let alreadyHadSame = false;
-
-        for (const [emojiKey, users] of msg.reactions.entries()) {
-          const index = users.indexOf(userEmail);
-
-          if (emojiKey === data.emoji && index !== -1) {
-            alreadyHadSame = true;
-          }
-
-          if (index !== -1) {
-            users.splice(index, 1);
-            msg.reactions.set(emojiKey, users);
-          }
+        // Ensure reactions is a Map
+        if (!(msg.reactions instanceof Map)) {
+            msg.reactions = new Map(Object.entries(msg.reactions || {}));
         }
 
-        if (!alreadyHadSame) {
-          const arr = msg.reactions.get(data.emoji) || [];
-          arr.push(userEmail);
-          msg.reactions.set(data.emoji, arr);
-        }
+        const currentEmoji = data.emoji;
+        let alreadyMatched = false;
 
-        await msg.save();
-
-        wss.clients.forEach((client) => {
-          const clientData = sockets.get(client);
-          if (!clientData) return;
-          if (clientData.room !== room) return;
-
-          if (client.readyState === WebSocket.OPEN) {
-            client.send(
-              JSON.stringify({
-                type: "chat-update",
-                room,
-                msg,
-              })
-            );
-          }
+        // 1. Remove user from ALL existing emojis (1 user, 1 reaction policy)
+        msg.reactions.forEach((users, emojiKey) => {
+            const index = users.indexOf(userEmail);
+            if (index !== -1) {
+                if (emojiKey === currentEmoji) alreadyMatched = true;
+                users.splice(index, 1);
+                msg.reactions.set(emojiKey, users);
+            }
         });
 
+        // 2. If user hadn't reacted with THIS emoji yet, add it
+        if (!alreadyMatched) {
+            const users = msg.reactions.get(currentEmoji) || [];
+            users.push(userEmail);
+            msg.reactions.set(currentEmoji, users);
+        }
+
+        msg.markModified('reactions'); // 🚩 Crucial for MongoDB
+        await msg.save();
+
+        const updateData = JSON.stringify({ type: "chat-update", room, msg });
+        wss.clients.forEach(client => {
+            if (client.readyState === WebSocket.OPEN) client.send(updateData);
+        });
         return;
       }
+
     });
 
     /* ===== DISCONNECT ===== */
@@ -555,23 +676,24 @@ if (!(msg.reactions instanceof Map)) {
       const userData = sockets.get(ws);
       if (!userData) return;
 
-      const id = userData.id;
+      const sid = userData.id; // Ye wahi unique UUID hai
+
+      // 1. WebSocket map se hatao
       sockets.delete(ws);
-      userLastMessage.delete(id);
+      
+      // 2. Throttling map se hatao
+      userLastMessage.delete(sid);
 
-      let stillConnected = false;
-      for (let value of sockets.values()) {
-        if (value.id === id) {
-          stillConnected = true;
-          break;
-        }
-      }
+      // 3. Online users ki list se turant hatao (Memory safe)
+      onlineUsersData.delete(sid); 
 
-      if (!stillConnected) {
-        onlineUsersData.delete(id); // Map se delete karo
-      }
+      // 4. Sabko nayi list bhejo
       emitOnlineUsers();
+      
+      console.log(`🔌 User disconnected and memory cleared: ${sid}`);
     });
+
+
 }); // passport.session
   });   // passport.initialize
 });     // sessionMiddleware

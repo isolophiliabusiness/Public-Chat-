@@ -141,7 +141,8 @@ let isTyping = false;
   connectWS();
 
 /* ================= ADD MESSAGE ================= */
-function addMessage(user, text, isHistory = false, time = Date.now(), messageId = null, reactions = {}, status = "server", avatar = "", replyTo = null) {
+function addMessage(user, text, isHistory = false, time = Date.now(), messageId = null, reactions = {}, status = "server", avatar = "", replyTo = null, role = "user", email = "") {
+
     if (messageId && renderedMessages.has(messageId)) return;
     if (messageId) renderedMessages.add(messageId);
 
@@ -191,6 +192,34 @@ function addMessage(user, text, isHistory = false, time = Date.now(), messageId 
     const isGrouped = lastMessageUser === user && timeDiff <= GROUP_TIME_LIMIT && !isHistory;
     div.className = (isMe ? "message sent" : "message received") + (isGrouped ? " grouped" : " new-group");
 
+    // 👇 SYSTEM MESSAGE LOGIC
+    if (user === "SYSTEM") {
+        div.className = "system-msg"; 
+        div.style.background = "rgba(255, 152, 0, 0.15)"; 
+        div.style.border = "1px solid #ff9800";
+        div.style.color = "#ff9800";
+        div.style.textAlign = "center";
+        div.style.margin = "10px auto";
+        div.style.width = "90%";
+        div.style.borderRadius = "10px";
+        div.style.padding = "8px";
+        div.style.fontSize = "0.85em";
+        div.style.fontWeight = "bold";
+        div.style.boxShadow = "0 0 10px rgba(255, 152, 0, 0.2)";
+        
+        div.textContent = text; // Seedha text daalo
+        wrapper.appendChild(div);
+        chat.appendChild(wrapper); // System msg ko yahin khatam karo
+        return; // <--- IMPORTANT: Iske niche ka code (Avatar/Reactions) execute nahi hoga
+    }
+
+
+    // ✅ YE ADD KARO: Agar banda admin hai, toh bubble par special class laga do
+    if (role === "admin") {
+        div.classList.add("admin-theme");
+    }
+
+
            if (!isMe) {
         const avatarEl = document.createElement("img");
         avatarEl.className = "avatar";
@@ -203,7 +232,8 @@ function addMessage(user, text, isHistory = false, time = Date.now(), messageId 
         avatarEl.style.cursor = "pointer";
         avatarEl.onclick = () => {
             if (typeof window.openProfile === "function") {
-                window.openProfile(user, avatar);
+                // Pehle yahan sirf (user, avatar) tha, ab 'role' bhi bhej rahe hain
+               window.openProfile(user, avatar, role, email); 
             }
         };
 
@@ -213,11 +243,49 @@ function addMessage(user, text, isHistory = false, time = Date.now(), messageId 
 
 
     if (!isGrouped) {
+        // Ek naya container banate hain Name + Badge ke liye
+        const nameContainer = document.createElement("div");
+        nameContainer.style.display = "flex";
+        nameContainer.style.alignItems = "center";
+        nameContainer.style.gap = "6px";
+        nameContainer.style.marginBottom = "2px";
+
         const nameEl = document.createElement("div");
         nameEl.className = "name";
         nameEl.textContent = user || "Unknown";
-        div.appendChild(nameEl);
+        nameContainer.appendChild(nameEl);
+
+        // ✅ ADMIN BADGE CHECK: Role 'admin' hai toh badge chipkao
+        if (role === "admin") {
+            const badge = document.createElement("span");
+            badge.className = "admin-badge";
+            badge.innerHTML = `<i class="fa-solid fa-crown" style="font-size: 0.85em;"></i> ADMIN`;
+
+            // Theme matching style (Teal/Cyan)
+            badge.style.cssText = `
+                background: rgba(0, 247, 255, 0.15);
+                color: #00f7ff;
+                border: 1px solid #00f7ff;
+                padding: 1px 6px;
+                border-radius: 4px;
+                font-size: 9px;
+                font-weight: 800;
+                letter-spacing: 0.5px;
+                display: flex;
+                align-items: center;
+                gap: 3px;
+                text-shadow: 0 0 5px rgba(0, 247, 255, 0.3);
+            `;
+            nameContainer.appendChild(badge);
+
+            // Optional: Bubble par bhi halka sa teal glow dene ke liye
+            div.style.borderLeft = "3px solid #00f7ff";
+            div.style.background = "linear-gradient(to right, rgba(0, 247, 255, 0.05), transparent)";
+        }
+
+        div.appendChild(nameContainer);
     }
+
     // --- REPLY UI IN CHAT BOX (Line 210 - 232) ---
     if (replyTo) {
         const replyTag = document.createElement("div");
@@ -562,11 +630,90 @@ input.addEventListener("input", () => {
   function handleWSMessage(event) {
     const data = JSON.parse(event.data);
 
+    // ✅ YE WALA BLOCK YAHAN DAAREIN (handleWSMessage ke shuruat mein)
+    if (data.type === "ban-list") {
+        const banContent = document.getElementById("banListContent");
+        if (!banContent) return;
+        
+        banContent.innerHTML = ""; 
+        
+        if (!data.users || data.users.length === 0) {
+            banContent.innerHTML = `<p style="color: #64748b; text-align: center; padding: 20px;">No users banned yet.</p>`;
+        } else {
+            data.users.forEach(user => {
+                const row = document.createElement("div");
+                row.style.cssText = "display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 10px; margin-bottom: 8px;";
+                
+                row.innerHTML = `
+                    <div style="overflow: hidden; text-align: left;">
+                        <div style="color: white; font-weight: bold; font-size: 0.9em;">${user.name}</div>
+                        <div style="color: #94a3b8; font-size: 0.75em;">${user.email}</div>
+                    </div>
+                    <button class="real-unban-btn" 
+                            style="background: #10b981; color: white; border: none; padding: 5px 10px; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer;">
+                        Unban
+                    </button>
+                `;
+
+                // ✅ Direct Listener lagao (Inline onclick se behtar hai)
+                row.querySelector(".real-unban-btn").addEventListener("click", () => {
+                    window.sendAdminAction(user.email, user.name, 'unban');
+                });
+
+                banContent.appendChild(row);
+            });
+
+        }
+        return; // ✅ Ye zaroori hai taaki aage ka chat logic na chale
+    }
+    // --------------------------------------------------
+
+    // ... Tera purana Kick/Ban Notice wala code yahan se shuru hoga ...
+
+
+    // 🚀 1. BAN / KICK OVERLAY LOGIC (Add this here)
+    if (data.type === "kick-notice" || data.type === "ban-notice") {
+        const typeTitle = data.type === "ban-notice" ? "⛔ PERMANENTLY BANNED" : "⚠️ KICKED FROM CHAT";
+        const message = data.type === "ban-notice" 
+            ? "Your access has been permanently revoked for violating community guidelines." 
+            : "You have been kicked from the current session by an admin.";
+
+        // Poori screen ko naye design se replace kar do
+        document.body.innerHTML = `
+            <div style="height: 100vh; background: #0a0f1e; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; font-family: 'Segoe UI', Roboto, sans-serif; padding: 20px; overflow: hidden;">
+                <div style="background: rgba(255, 71, 87, 0.05); border: 1px solid rgba(255, 71, 87, 0.3); padding: 40px; border-radius: 24px; box-shadow: 0 0 40px rgba(255, 71, 87, 0.1); max-width: 450px; width: 100%;">
+                    <div style="font-size: 50px; margin-bottom: 20px;">🚫</div>
+                    <h1 style="color: #ff4757; font-size: 1.8rem; margin-bottom: 15px; font-weight: 800; letter-spacing: -0.5px;">${typeTitle}</h1>
+                    <p style="font-size: 1rem; color: #cbd5e1; line-height: 1.6; margin-bottom: 25px;">${message}</p>
+                    
+                    <div style="background: rgba(0, 247, 255, 0.03); border: 1px dashed rgba(0, 247, 255, 0.3); padding: 20px; border-radius: 16px; margin-bottom: 25px;">
+                        <p style="margin: 0 0 10px 0; color: #94a3b8; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;">Appeal this action</p>
+                        <a href="mailto:support@yourdomain.com" style="color: #00f7ff; font-weight: bold; text-decoration: none; font-size: 1.1rem; word-break: break-all;">📩 support@yourdomain.com</a>
+                    </div>
+
+                    <button onclick="window.location.href='/login'" style="background: #1e293b; color: white; border: 1px solid #334155; padding: 12px 24px; border-radius: 12px; cursor: pointer; font-weight: 600; transition: 0.3s; width: 100%;">Return to Login</button>
+                </div>
+            </div>
+        `;
+        
+        // Browser se data saaf karo taaki wo wapas na ghuse
+        localStorage.removeItem("chatUser");
+        if(ws) ws.close(); 
+        return; // Important: Iske neeche ka koi code mat chalao
+    }
+
+    // --- Iske neeche tera purana code shuru hoga (if (data.type === "me") etc.) ---
 if (data.type === "me") {
   window.currentUser = data.name || data.email;
   window.currentEmail = data.email; // ✅ Ye line add karo sidebar check ke liye
+  window.currentUserRole = data.role || "user"; // ✅ YE LINE ADD KARO
   window.currentAvatar = data.avatar || "";
   localStorage.setItem("chatUser", window.currentUser);
+  // ✅ YE ADD KARO: Agar user admin nahi hai, toh Manage Ban button gayab kar do
+  const banBtn = document.getElementById("openBanListBtn");
+  if (banBtn) {
+      banBtn.style.display = (window.currentUserRole === "admin") ? "block" : "none";
+  }
   return;
 }
 
@@ -595,13 +742,26 @@ if (data.type === "typing") {
       // 1. Purani height save kar lo (Scroll freeze ke liye)
       const oldScrollHeight = chat.scrollHeight;
 
-      if (data.messages.length > 0) {
+if (data.messages && data.messages.length > 0) {
         // Sabse purane message ka time save karo agli request ke liye
         oldestMessageTime = data.messages[0].time;
 
         // Messages ko reverse karke addMessage call karo
 data.messages.forEach(msg => {
-  addMessage(msg.user, msg.text, true, msg.time, msg._id, msg.reactions, msg.status || "server", msg.avatar, msg.replyTo); // <--- msg.replyTo add kiya
+    // addMessage parameters: user, text, isHistory, time, messageId, reactions, status, avatar, replyTo, role
+    addMessage(
+        msg.user, 
+        msg.text, 
+        true,                // isHistory (Important)
+        msg.time, 
+        msg._id, 
+        msg.reactions, 
+        msg.status || "server", 
+        msg.avatar, 
+        msg.replyTo, 
+        msg.role,            // ✅ Ye ab sahi 10th position par hai
+        msg.email
+    );
 });
 
 
@@ -630,24 +790,35 @@ if (data.type === "chat") {
 addMessage(
   data.msg.user,
   data.msg.text,
-  false,
+  false,               // isHistory
   data.msg.time,
   data.msg._id,
   data.msg.reactions,
   data.msg.status || "server",
   data.msg.avatar,
-  data.msg.replyTo // <--- data.msg.replyTo add kiya
+  data.msg.replyTo,
+  data.msg.role || "user", // ✅ Agar server se role na aaye toh default 'user' rahe
+ data.msg.email // ✅ YE 11th POSITION PAR ADD KARO
 );
+
 
 
    updateMessageStatus(data.msg._id, 'seen');
 
-   // 🔊 Sound play
-   if (isMe) {
-     playSendSound();
-   } else {
-     playReceiveSound();
-   }
+    // 🔊 Sound play logic (Updated)
+    if (data.msg.user === "SYSTEM") {
+        // SYSTEM message ke liye alert bajao
+        const alertSound = new Audio("alert.mp3");
+        alertSound.play().catch(() => {});
+    } else {
+        // Normal messages ke liye purana logic
+        if (isMe) {
+            playSendSound();
+        } else {
+            playReceiveSound();
+        }
+    }
+
 }
 
     if (data.type === "chat-update") updateMessage(data.msg);
@@ -784,27 +955,83 @@ function removeTypingIndicator() {
      currentReplyData = null;
      document.getElementById("replyPreview").classList.add("hidden");
  };
-/* ================= PROFILE MODAL LOGIC ================= */
-window.openProfile = function(name, avatar) {
+/* ================= PROFILE MODAL LOGIC (UPDATED) ================= */
+window.openProfile = function(name, avatar, role = "user", email = "") {
     const modal = document.getElementById("userModal");
     const mName = document.getElementById("modalName");
     const mAvatar = document.getElementById("modalAvatar");
     const mEmail = document.getElementById("modalEmail");
+    const adminActions = document.getElementById("adminActions"); 
 
     if (modal && mName && mAvatar) {
         mName.textContent = name;
         mAvatar.src = avatar || "logo.png";
-        mEmail.textContent = "Community Member"; // Baad mein email bhi pass kar sakte hain
+        
+        if (role === "admin") {
+            mEmail.innerHTML = `<span style="color: #00f7ff; font-weight: bold;">👑 Server Owner / Admin</span>`;
+        } else {
+            mEmail.textContent = "Community Member";
+            mEmail.style.color = "#aaa";
+        }
+
+        // 🛡️ ADMIN CONTROLS
+        if (window.currentUserRole === "admin" && email !== window.currentEmail) {
+            adminActions.innerHTML = `
+                <div class="admin-btn-group" style="margin-top: 20px; display: flex; gap: 10px; justify-content: center; width: 100%;">
+                    <button id="kickBtnNode" class="btn-kick" style="background: #ff9800; color: white; border: none; padding: 10px 15px; border-radius: 8px; font-weight: bold; cursor: pointer;">
+                        Kick
+                    </button>
+                    <button id="banBtnNode" class="btn-ban" style="background: #f44336; color: white; border: none; padding: 10px 15px; border-radius: 8px; font-weight: bold; cursor: pointer;">
+                        Ban User
+                    </button>
+                </div>
+            `;
+
+            // ✅ NAYA TARIKA: Direct Event Listeners lagao (Inline onclick ki jagah)
+            document.getElementById("kickBtnNode").addEventListener("click", () => {
+                window.sendAdminAction(email, name, 'kick');
+            });
+            document.getElementById("banBtnNode").addEventListener("click", () => {
+                window.sendAdminAction(email, name, 'ban');
+            });
+
+        } else {
+            adminActions.innerHTML = "";
+        }
+        
         modal.classList.remove("hidden");
     }
 };
 
+
+// ✅ Modal close button logic
 const closeModalBtn = document.getElementById("closeModal");
 if (closeModalBtn) {
     closeModalBtn.onclick = () => {
         document.getElementById("userModal").classList.add("hidden");
     };
 }
+
+// 🚀 Server ko request bhejne wala function
+window.sendAdminAction = function(email, name, action) {
+    if (!email || email === "undefined") return alert("Error: User email missing!");
+    
+    const confirmMsg = action === 'ban' ? `PERMANENTLY BAN ${name}?` : `Kick ${name} from chat?`;
+    if (!confirm(confirmMsg)) return;
+
+    if (ws && ws.readyState === WebSocket.OPEN) {
+       // ✅ SAHI JAGAH YE HAI (Admin Action ke andar)
+          alert("Action " + action + " sent for " + email); 
+        ws.send(JSON.stringify({
+            type: "admin-action",
+            targetEmail: email,
+            targetName: name,
+            action: action
+        }));
+        document.getElementById("userModal").classList.add("hidden");
+    }
+};
+
   /* ================= SIDEBAR UI RENDERER ================= */
   function updateSidebarUI() {
     const sidebarContainer = document.querySelector(".sidebar-content"); // Check karo ye ID/Class tere HTML mein ho
@@ -833,7 +1060,8 @@ if (closeModalBtn) {
       // Click karne par us bande ka profile modal khul jaye
       userRow.onclick = () => {
         if (typeof window.openProfile === "function") {
-          window.openProfile(user.name, user.avatar);
+          // Humne sidebar data mein role pehle hi bhej diya hai
+          window.openProfile(user.name, user.avatar, user.role, user.email); // ✅ email add kiya
         }
       };
 
@@ -860,8 +1088,29 @@ if (toggleBtn && sidebar) {
   });
 }
 
+/* ================= BAN MANAGEMENT UI LOGIC ================= */
+const banModal = document.getElementById("banListModal");
+const openBanBtn = document.getElementById("openBanListBtn");
+const closeBanBtn = document.getElementById("closeBanList");
+const banContent = document.getElementById("banListContent");
 
-});
+// 1. Modal kholte hi server se list maango
+if(openBanBtn) {
+    openBanBtn.onclick = () => {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: "get-ban-list" }));
+            banModal.classList.remove("hidden");
+        } // <--- Ye IF ka bracket hai
+    }; // <--- Ye onclick ka bracket hai
+}
+
+// 2. Modal Band karna
+if(closeBanBtn) closeBanBtn.onclick = () => banModal.classList.add("hidden");
+
+// --- AB YAHAN DOMContentLoaded KO BAND KARO ---
+}); // <--- Ye line 1 DOMContentLoaded wala bracket hai
+
+
 
 // 2. iOS Safari aur baki browsers par "Double Tap to Zoom" ko JS se rokna
 document.addEventListener('touchstart', function (event) {

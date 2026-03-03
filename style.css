@@ -96,10 +96,10 @@ input, textarea {
   bottom: 0; 
   left: 15%;
   width: 70%;
-  height: 1.5px;
+  height: 0.2px;
   
   background: linear-gradient(90deg, transparent, #00f7ff, transparent);
-  box-shadow: 0 0 10px rgba(0,247,255,0.6);
+  box-shadow: 0 0 5px rgba(0,247,255,0.6);
   pointer-events: none;
   
   /* 3. Safety ke liye z-index check */
@@ -307,7 +307,7 @@ input, textarea {
 
 /* different user gap */
 .message:not(.grouped) {
-  margin-top: 3px;
+  margin-top: 2.5px;
 }
 
 /* same user tight gap */
@@ -1168,6 +1168,7 @@ position: absolute;
 }
 
 .sidebar-user-row {
+    background-color: #262729;
     display: flex;
     align-items: center;
     gap: 12px;
@@ -1228,8 +1229,8 @@ position: absolute;
   .sidebar {
     position: absolute;
     left: -100%; /* Shuruat mein screen ke bahar */
-    z-index: 2000;
-    height: 100%;
+    z-index: 9999;
+    height: 100%%;
     background: #121212; /* Dark background */
     transition: left 0.3s ease;
   }
@@ -1243,16 +1244,131 @@ position: absolute;
   .sidebar {
     position: fixed;
     left: -280px; /* Screen ke bahar */
-    top: 60px;
-    height: calc(100% - 60px);
-    width: 260px;
-    z-index: 999;
+    top: 81px;
+    height: calc(100% - 165px);
+    width: 250px;
+    border-radius: 22px;
+    z-index: 99999;
     background: #121212;
-    transition: left 0.3s ease;
-  }
+    transition: left 0.3s ease;  
+}
+.sidebar.active {
+left: 0;
+}
+#sidebarOnlineHeader {
+  position: relative;
+  left: 20px;
+  color: #53c2b9;
+ }
+/* --- ADMIN THEME FULL FIX --- */
 
-  /* Jab JS 'active' class lagayega tab ye dikhega */
-  .sidebar.active {
-    left: 0;
-  }
+/* 1. Base Bubble Style */
+.message.admin-theme {
+    border-left: 3px solid #00f7ff !important;
+    background: linear-gradient(to right, rgba(0, 247, 255, 0.1), rgba(0, 0, 0, 0.3)) !important;
+    box-shadow: inset 0 0 10px rgba(0, 247, 255, 0.15) !important;
+    max-width: 85% !important; /* Screen se bahar jane se rokega */
+    position: relative;
+}
+
+/* 2. Received Side (Left) Fix */
+.message-row:not(.me) .message.admin-theme.new-group {
+    margin-left: 4px !important; /* Avatar ke saath spacing fix */
+}
+
+/* 3. Sent Side (Right) Fix */
+.message-row.me .message.admin-theme {
+    border-left: none !important;
+    border-right: 3px solid #00f7ff !important; /* Right side par border */
+    background: linear-gradient(to left, rgba(0, 247, 255, 0.15), rgba(0, 0, 0, 0.4)) !important;
+}
+
+/* 4. Grouped Messages Fix (Alignment) */
+.message.admin-theme.grouped {
+    margin-top: 2px !important;
+}
+
+/* 5. Badge Alignment Fix */
+.admin-badge {
+    display: inline-flex !important;
+    align-items: center;
+    vertical-align: middle;
+    white-space: nowrap; /* Badge ko tootne se rokega */
+}
+
+/* 6. Text Contrast */
+.admin-theme .msg-text {
+    color: #fff !important;
+    word-wrap: break-word; /* Lambe messages ko screen ke andar rakhega 
+}
+/* --- ADMIN THEME (MATCHING YOUR RECEIVED STYLE) --- */
+
+.message.admin-theme {
+    /* Base Position & Shape from your code */
+    align-self: flex-start !important;
+    border-radius: 18px !important;
+    border-top-left-radius: 6px !important;
+    margin-left: 5px !important; /* Aapke Line 305 wala same margin */
+    
+    /* Your Theme Background + Teal Tint */
+    background: linear-gradient(180deg, #1C1D1F 0%, #17181A 50%, #121416 100%) !important;
+    backdrop-filter: blur(10px) !important;
+    
+    /* Teal Border & Glow */
+    border: 1px solid rgba(0, 247, 255, 0.4) !important; /* Normal white border ki jagah teal tint */
+    border-left: 4px solid #00f7ff !important; /* Premium left border */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3), inset 0 0 10px rgba(0, 247, 255, 0.1) !important;
+
+    /* Width & Text Fix */
+    max-width: 80% !important; 
+    padding: 8px 12px !important;
+    box-sizing: border-box !important;
+}
+
+/* 2. Received Side (Left Fix) jab naya group ho */
+.message-row:not(.me) .message.admin-theme.new-group {
+    margin-left: 10px !important; /* Avatar ke saath gap */
+}
+
+/* 3. Sent Side (Right Fix) - Jab aap bhejte ho */
+.message-row.me .message.admin-theme {
+    align-self: flex-end !important;
+    border-radius: 18px !important;
+    border-top-right-radius: 6px !important; /* Right side ke liye flip */
+    border-top-left-radius: 18px !important;
+    border-left: 1px solid rgba(0, 247, 255, 0.4) !important;
+    border-right: 4px solid #00f7ff !important; /* Border right side shift */
+    margin-right: 5px !important;
+}
+
+/* Text Word Wrap Fix */
+.admin-theme .msg-text {
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+}
+
+.admin-btn-group {
+    margin-top: 15px;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+.btn-kick {
+    background: #ff9800;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+}
+.btn-ban {
+    background: #f44336;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    box-shadow: 0 0 10px rgba(244, 67, 54, 0.4);
 }

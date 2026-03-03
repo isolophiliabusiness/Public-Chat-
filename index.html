@@ -51,6 +51,7 @@
     <button id="toggleSidebar">
       <i class="fa-solid fa-users"></i> Member List
     </button>
+     <button id="openBanListBtn" style="color: #ff4757; font-weight: bold;">Manage Bans 🚫</button>
     <button id="logoutBtn"> <!--Logout</button> -->
     <i class="fa-solid fa-right-from-bracket"></i>
    Logout</button>
@@ -63,9 +64,9 @@
   <div class="chat-wrapper">
     
     <aside class="sidebar">
-      <div class="sidebar-header">
-        <i class="fa-solid fa-users"></i> Online Users
-      </div>
+<div class="sidebar-header" id="sidebarOnlineHeader">
+    <i class="fa-solid fa-users"></i> Online Users
+</div>
       <div class="sidebar-content">
         </div>
     </aside>
@@ -85,7 +86,7 @@
         <button id="cancelReply">×</button>
     </div>
 
-    <div class="input-bar" style="position: relative; bottom: 0; left: 0; transform: none; width: 100%;">
+    <div class="input-bar" style="position: relative; bottom: 0; left: -8px; transform: none; width: 100%;">
         <input type="text" id="messageInput" placeholder="Type a message..."/>
         <div class="sendBtn">
             <button id="sendBtn">
@@ -102,10 +103,37 @@
       <img id="modalAvatar" src="" alt="User">
       <h2 id="modalName">User Name</h2>
       <p id="modalEmail">user@example.com</p>
+       <div id="adminActions"></div> 
       <button id="closeModal">Back to Chat</button>
     </div>
   </div>
 </div>
+<div id="userModal" class="modal hidden">
+  <div class="modal-content">
+    <div class="modal-banner"></div> 
+    <div class="modal-body">
+      <img id="modalAvatar" src="" alt="User">
+      <h2 id="modalName">User Name</h2>
+      <p id="modalEmail">user@example.com</p>
+      <div id="adminActions"></div>
+      <button id="closeModal">Back to Chat</button>
+    </div>
+  </div>
+</div>
+
+<div id="banListModal" class="hidden" style="position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: #1e293b; width: 100%; max-width: 400px; border-radius: 20px; border: 1px solid #334155; padding: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 style="color: white; margin: 0;">Banned Users</h3>
+            <button id="closeBanList" style="background: none; border: none; color: #94a3b8; font-size: 24px; cursor: pointer;">&times;</button>
+        </div>
+        <div id="banListContent" style="max-height: 300px; overflow-y: auto;">
+            </div>
+    </div>
+</div>
+
+</body> </html>
+
 
 </body>
 </html>
