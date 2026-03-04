@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "bad-words": "^3.0.4",
     "cloudinary": "^2.9.0",
     "compression": "^1.8.1",
     "connect-mongo": "^6.0.0",
