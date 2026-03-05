@@ -619,12 +619,28 @@ if (data.type === "admin-action") {
       }
       /* ===== GET ALL REPORTS (FOR ADMIN DASHBOARD) ===== */
       if (data.type === "get-reports") {
-        if (!req.user || req.user.role !== "admin") return;
+        // Sirf Admin access kar sake
+        const isAdmin = req.user && (req.user.role === "admin" || req.user.email === process.env.ADMIN_EMAIL);
+        if (!isAdmin) return;
+
         try {
           const reports = await Report.find().sort({ timestamp: -1 }).limit(50);
+          
+          // Frontend 'targetName' aur 'targetEmail' dhoondh raha hai
+          // Hum database ke fields ko map karke bhejenge
+          const formattedReports = reports.map(r => ({
+            _id: r._id,
+            targetName: r.reportedUser,     // frontend expectation
+            targetEmail: r.reportedEmail,   // frontend expectation
+            reportedBy: r.reporterEmail,    // frontend expectation
+            reason: r.reason,
+            text: r.messageText,
+            timestamp: r.timestamp
+          }));
+
           ws.send(JSON.stringify({
             type: "all-reports-list",
-            reports: reports
+            reports: formattedReports
           }));
         } catch (err) {
           console.error("Fetch Reports Error:", err);
@@ -878,11 +894,20 @@ if (!userEmail) {
                    text: `🚨 New Report: ${targetMsg.user} was reported!` 
                  }));
 
-                 // 2. Live Dashboard Update (Naya row add karne ke liye)
-                 client.send(JSON.stringify({
-                   type: "new-live-report",
-                   report: newReport
-                 }));
+ // 2. Live Dashboard Update (Naya row add karne ke liye)
+client.send(JSON.stringify({
+  type: "new-live-report",
+  report: {
+    _id: newReport._id,
+    targetName: newReport.reportedUser,
+    targetEmail: newReport.reportedEmail,
+    reportedBy: newReport.reporterEmail,
+    reason: newReport.reason,
+    text: newReport.messageText,
+    timestamp: newReport.timestamp
+  }
+}));
+
                }
             }
           });

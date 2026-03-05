@@ -1,5 +1,8 @@
 {
   "dependencies": {
+    "@capacitor/android": "^8.1.0",
+    "@capacitor/cli": "^8.1.0",
+    "@capacitor/core": "^8.1.0",
     "bad-words": "^3.0.4",
     "cloudinary": "^2.9.0",
     "compression": "^1.8.1",

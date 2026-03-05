@@ -1,0 +1,1355 @@
+/* User Selection aur Copy Block */
+* {
+  -webkit-user-select: none;  /* Safari */
+  -ms-user-select: none;      /* IE 10+ */
+  user-select: none;          /* Standard syntax */
+  -webkit-touch-callout: none; /* iOS Safari context menu block */
+}
+
+/* Input aur Textarea mein type karne ke liye selection allow rakhein */
+input, textarea {
+  -webkit-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
+
+
+/* ===== GLOBAL ===== */ body { margin: 0; overflow: 
+  hidden; background: #000; font-family: 'Inter', 
+  system-ui, -apple-system, sans-serif;
+}
+/* ===== HEADER BASE (LAYOUT PRESERVED - COLOR UPDATED) ===== */
+.chat-header {
+  position: relative;
+  margin: 5px;
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  
+  /* Color Update: Background ko thoda contrast diya taaki background se alag dikhe */
+  background: rgba(26, 28, 30, 0.75); 
+  
+  /* Border: Landing page vibe ke liye halka neon touch */
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(0, 247, 255, 0.2); 
+  
+  /* Shadow: Depth dene ke liye */
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-radius: 22px;
+  overflow: visible !important;
+  z-index: 1000;
+}
+/* ===== SHIMMERING NEON TITLE (MODIFIED) ===== */
+.title-row h1 {
+  font-family: 'Michroma', sans-serif;
+  font-weight: 900;
+  text-transform: uppercase;
+  
+  /* --- Step 1: Complex Gradient banaya (White-Cyan-White) --- */
+  background: linear-gradient(
+    to right, 
+    #ffffff 20%,   /* Shuru mein White */
+    #00f7ff 40%,   /* Beech mein Cyan (Roshni) */
+    #00f7ff 60%,   /* Cyan thoda lamba rahe */
+    #ffffff 80%    /* End mein wapas White */
+  );
+  
+  /* --- Step 2: Background size bada kiya (Isse gradient shift hoga) --- */
+  background-size: 200% auto;
+  
+  /* --- Step 3: Text Clip (Zaroori hai) --- */
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  
+  /* --- Step 4: Subtle Glow dalo --- */
+  filter: drop-shadow(0 0 5px rgba(0, 247, 255, 0.4));
+  
+  /* --- Step 5: Animation trigger karo (Smooth & Linear) --- */
+  animation: shineTitle 3s linear infinite;
+  
+  /* Tera baki code (font-size wagera) yahan rahega */
+  font-size: 14px; 
+  letter-spacing: 1px;
+}
+
+/* ===== TEXT SHINE KEYFRAMES ===== */
+@keyframes shineTitle {
+  to {
+    /* Gradient position ko shift kar diya */
+    background-position: 200% center; 
+  }
+}
+.chat-header::after {
+  content: "";
+  /* 1. 'fixed' ki jagah 'absolute' karo taaki ye header ke andar rahe */
+  position: absolute; 
+  
+  /* 2. 'bottom' ko adjust karo taaki line header ke bottom edge par chipki rahe */
+  bottom: 0; 
+  left: 15%;
+  width: 70%;
+  height: 0.2px;
+  
+  background: linear-gradient(90deg, transparent, #00f7ff, transparent);
+  box-shadow: 0 0 5px rgba(0,247,255,0.6);
+  pointer-events: none;
+  
+  /* 3. Safety ke liye z-index check */
+  z-index: 1; 
+}
+
+/*.chat-header::after {
+  content: "";
+  position: fixed;
+  bottom: -5%;
+  left: 14%;
+  width: 70%;
+  height: 1.5px;
+  background: linear-gradient(90deg, transparent, #00f7ff, transparent);
+  box-shadow: 0 0 10px rgba(0,247,255,0.6);
+  pointer-events: none;
+}*/
+
+
+/* ===== LEFT SIDE ===== */
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+/* ===== LOGO ===== */
+.logo {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(0,247,255,0.6);
+  box-shadow: 0 0 10px rgba(0,247,255,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ===== TITLE ===== */
+.title-box {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.title-row h1 {
+  font-size: 13px;
+  margin: 0;
+  color: #fff;
+  letter-spacing: 0.6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ===== BADGES ===== */
+.badge {
+  font-size: 10px;
+  padding: 2px 4px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+/* ===== ONLINE DOT ===== */
+.online-dot {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  /* Exact Fluorescent Green from image */
+  background-color: #00FF33; 
+  border-radius: 50%;
+  margin-left: 0;
+  vertical-align: middle;
+  /* Border for the dot to pop out on dark bg */
+  border: 1.5px solid #000; 
+  box-shadow: 0 0 8px rgba(0, 255, 51, 0.6);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(0, 255, 51, 0.7); }
+  70% { transform: scale(1.1); box-shadow: 0 0 0 6px rgba(0, 255, 51, 0); }
+  100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(0, 255, 51, 0); }
+}
+
+
+.beta {
+  background: #00f7ff;
+  color: #000;
+  font-weight: 600;
+}
+
+.version {
+  background: rgba(255,255,255,0.06);
+  color: #aaa;
+  border: 1px solid rgba(255,255,255,0.15);
+}
+
+/* ===== STATUS ===== */
+.live-status {
+  font-size: 11px;
+  color: #00ff7f;
+  margin: 2px 0 0;
+}
+/* ===== MENU ===== */
+.menu {
+  font-size: 20px;
+  color: #00f7ff;
+  cursor: pointer;
+  padding: 4px 6px;
+  position: relative;
+  z-index: 100;
+}
+/* ===== CHAT WRAPPER ===== */
+.chat-wrapper {
+  position: fixed;
+  top: 78px;
+  bottom: 90px;
+  left: 0;
+  right: 0;
+  padding-bottom: 22px;
+}
+.chat-bg {
+  height: 100%;
+  width: 100%;
+  position: relative;   /* 🔥 IMPORTANT */
+}
+
+/* ===== CHAT ===== */
+.chat {
+  height: 100%;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+}
+
+.chat::-webkit-scrollbar {
+  width: 0;
+}
+/* 1. Message Bubble - Flexbox ko puri tarah hata kar block kiya */
+.message {
+  display: block !important; 
+  width: fit-content;
+  max-width: 75%;
+  padding: 8px 10px 6px 12px;
+  font-size: 14px;
+  border-radius: 18px;
+  position: relative;
+  word-wrap: break-word;
+  backdrop-filter: blur(12px);
+  animation: fadeIn 0.25s ease;
+  overflow: visible;
+}
+/* 2. Text Content - Ise inline rakna zaroori hai side-by-side ke liye */
+.msg-text {
+  display: inline; 
+  white-space: pre-wrap; 
+  word-wrap: break-word;
+  line-height: 1.5;
+  vertical-align: top;
+}
+
+.message.received .name {
+  color: #8be9fd; /* soft cyan */
+}
+.message.sent {
+  align-self: flex-end;
+  background: linear-gradient(145deg, #002B2E 0%, #005F5F 70%, #00FBFF 150%);
+  border: 1px solid rgba(0, 251, 255, 0.25);
+  color: #ffffff;
+  border-radius: 18px;
+  border-top-right-radius: 6px;
+  margin-right: 5px;
+  padding-right: 12px; /* Text ke liye jagah */
+}
+
+.message.received {
+  align-self: flex-start;
+  background: linear-gradient(180deg, #1C1D1F 0%, #17181A 50%, #121416 100%); 
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  color: #F2F5F7; 
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-top-left-radius: 6px;
+  border-radius: 18px;
+  margin-left: 5px;
+}
+
+/* different user gap */
+.message:not(.grouped) {
+  margin-top: 2.5px;
+}
+
+/* same user tight gap */
+.message.grouped {
+  margin-top: 2px;
+}
+@keyframes flashHighlight {
+    0% { background-color: rgba(0, 247, 255, 0.4); transform: scale(1.02); }
+    50% { background-color: rgba(0, 247, 255, 0.2); }
+    100% { background-color: transparent; transform: scale(1); }
+}
+
+.highlight-msg {
+    animation: flashHighlight 1.5s ease-out;
+    border: 1px solid #00f7ff !important;
+    z-index: 100;
+}
+
+.name {
+  font-weight: 600;
+  font-size: 11px;
+  margin-bottom: 3px;
+/* color: #8be9fd;*/
+  color: #9aa5b1;
+}
+.timestamp {
+  font-size: 10px;
+  margin-top: 4px;
+  margin-left: 8px; /* Text se thodi doori */
+  opacity: 0.7;
+  float: right; /* 🔥 Ye time ko text ke side mein shift karega */
+  position: relative;
+  bottom: -4px; /* Niche corner mein set karne ke liye */
+}
+.message.sent .timestamp {
+  align-self: flex-end;
+/*  color: #000;*/
+  color: rgba(255,255,255,0.7);
+}
+
+.message.received .timestamp {
+  align-self: flex-start;
+  color: #aaa;
+}
+.message.grouped .name {
+  display: none;
+}
+
+.message.grouped {
+  margin-top: 2px;
+}
+/* ===== INPUT BAR (Original Layout Maintained) ===== */
+.input-bar {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 24px);
+  max-width: 480px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 11px;
+  background: #0e0e0e; /* Original Background */
+  border-radius: 30px;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.6);
+  /* Yahan koi extra z-index nahi taaki unread pointer distrub na ho */
+}
+
+.input-bar input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #fff;
+  font-size: 15px;
+}
+
+.input-bar input::placeholder {
+  color: #888;
+}
+
+/* ===== SEND BUTTON (Soft Cyan Gradient & Smooth Animation) ===== */
+.input-bar button {
+  width: 47px;
+  height: 46px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  /* Red hatakar soft Cyan/Teal gradient */
+  background: linear-gradient(135deg, #005F5F 0%, #00FBFF 100%);
+  color: #001414;
+  font-size: 18px;
+  /* Transition ko soft kiya hai */
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.input-bar button:active {
+  /* Ekdum soft scale effect bina kisi jhatke ke */
+  transform: scale(0.95);
+  filter: brightness(1.1);
+}
+
+/* ===== DATE DISPLAY ===== */
+.date-wrapper {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin: 15px 0;
+  clear: both;
+}
+
+.date-separator {
+  font-size: 13px;
+  color: #00f7ff;
+  background-color: rgba(0, 0, 0, 0.6);
+  padding: 5px 15px;
+  border-radius: 20px;
+  display: inline-block;
+  font-family: 'Arial', sans-serif;
+  text-align: center;
+  z-index: 1;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+
+@keyframes dateFadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+/* ===== MODAL ===== */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+.modal {
+  background: #1f1f1f;
+  color: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  width: 340px;
+  max-width: 90%;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+  display: none;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.modal h2 {
+  margin: 0 0 10px 0;
+  font-size: 18px;
+}
+
+.modal input,
+.modal select {
+  padding: 8px 10px;
+  border-radius: 5px;
+  border: none;
+  background: #333;
+  color: #fff;
+}
+
+.modal button {
+  padding: 8px 12px;
+  border: none;
+  border-radius: 5px;
+  background: #4caf50;
+  color: #fff;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.modal button:hover {
+  background: #45a049;
+}
+
+.modal .close {
+  background: #e53935;
+}
+
+.modal .close:hover {
+  background: #d32f2f;
+}
+.message {
+  animation: fadeIn 0.25s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+/* grouped messages tight */
+.message.grouped {
+  margin-top: 2px;
+}
+
+/* new group messages spaced */
+.message.new-group {
+  margin-top: 12px;
+}
+/* ❌ grouped messages → NO tail */
+.message.grouped::after {
+  display: none;
+}
+/* only last bubble of group shows tail */
+.message.grouped.sent::after,
+.message.grouped.received::after {
+  display: none;
+}
+/* middle bubbles */
+.message.grouped.sent {
+  border-top-right-radius: 8px;
+}
+
+.message.grouped.received {
+  border-top-left-radius: 8px;
+}
+
+/* last bubble smooth */
+.message.new-group.sent {
+  border-top-right-radius: 18px;
+}
+
+.message.new-group.received {
+  border-top-left-radius: 18px;
+}
+.message-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  margin: 2px 0; /* ✨ smoother vertical rhythm */
+}
+
+.message-row.me {
+  justify-content: flex-end;
+}
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+  margin-bottom: 2px; /* ✨ aligns with bubble bottom */
+}
+.avatar-placeholder {
+  visibility: hidden;
+}
+/* ===== MENU DROPDOWN FIX ===== */
+.menu {
+  position: relative;
+  cursor: pointer;
+  z-index: 1000; /* Sabse upar dikhne ke liye */
+}
+
+.menu-dropdown {
+  position: absolute;
+  /* Header ke bilkul neeche aane ke liye */
+  top: 45px; 
+  right: 0;
+  
+  background: #1c1d1f; /* Dark theme se match karta color */
+  border: 1px solid rgba(0, 247, 255, 0.2);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  min-width: 160px;
+  
+  /* Initial state: Chupa hua aur thoda niche */
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+.menu-dropdown.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0); /* Smooth slide down effect */
+}
+
+/* Dropdown ke buttons ko align karne ke liye */
+.menu-dropdown button {
+  background: transparent;
+  border: none;
+  color: #fff;
+  padding: 12px 16px;
+  text-align: left;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  transition: background 0.2s;
+}
+
+.menu-dropdown button:hover {
+  background: rgba(0, 247, 255, 0.1);
+  color: #00f7ff;
+}
+
+/* Logout button ka specific color */
+#logoutBtn {
+  color: #ff4d4d !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+#newMsgBtn {
+  position: absolute;
+  bottom: 0px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 16px;
+  border-radius: 20px;
+  border: none;
+  background: #2dd4bf;
+  color: #001414;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+  transition: all 0.2s ease;
+  z-index: 20;
+}
+#newMsgBtn {
+position: absolute;
+  bottom: 90px;
+  right: 20px;
+  z-index: 50;
+}
+#newMsgBtn:hover {
+  transform: translateX(-50%) scale(1.05);
+}
+.avatar-spacer {
+  width: 32px; /* avatar size ke according adjust */
+}
+
+.typing-indicator.theme-typing {
+  padding: 8px 14px;
+  border-radius: 16px;
+  background: #1f1f1f; /* match your received bubble bg */
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+.typing-dots {
+  display: flex;
+  gap: 5px;
+}
+
+.typing-dots span {
+  width: 6px;
+  height: 6px;
+  background: #9aa0a6; /* soft grey like WhatsApp */
+  border-radius: 50%;
+  animation: smoothBounce 1.4s infinite ease-in-out;
+}
+
+.typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes smoothBounce {
+  0%, 80%, 100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  40% {
+    transform: translateY(-3px);
+    opacity: 1;
+  }
+}
+/* History Loader Style - Match with Date Separator */
+#historyLoader {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  clear: both;
+
+  /* --- Sticky Magic --- */
+  position: sticky; 
+  top: 0;           /* Ye ise chat box ke top edge par rok dega */
+  z-index: 999;     /* Messages aur date ke upar dikhne ke liye */
+
+  /* Thoda sa gap taaki ekdum border se na chipke (optional) */
+  padding-top: 0px; 
+  pointer-events: none; /* Taaki scroll karne mein ungli ko disturb na kare */
+}
+/* Pill shape background jo Date separator se match karega */
+.loader-capsule {
+  background-color: rgba(0, 0, 0, 0.6);
+  padding: 5px 15px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  border: 1px solid rgba(0, 247, 255, 0.1);
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(0, 247, 255, 0.2);
+  border-top: 2px solid #00f7ff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-right: 10px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loader-text {
+  color: #00f7ff;
+  font-size: 13px;
+  font-family: 'Arial', sans-serif;
+  text-shadow: 0 0 5px #00f7ff;
+}
+/* 3. Time & Ticks Container - Float magic yahi hai */
+.message-meta {
+  display: inline-flex !important; 
+  float: right; 
+  align-items: center;
+  gap: 3px;
+  margin-left: 10px;
+  margin-top: 6px; /* Text ke sath balance karne ke liye */
+  position: relative;
+  bottom: -2px;
+  white-space: nowrap;
+  vertical-align: bottom;
+  pointer-events: none;
+}
+.message.sent .name {
+  display: none;
+  color: #003c3c; /* dark teal text */
+}
+
+/* 4. Timestamp Reset - Purane flex logic ko block karne ke liye */
+.timestamp, .time {
+  font-size: 10px;
+  opacity: 0.7;
+  margin: 0 !important;
+  align-self: auto !important; 
+  display: inline-block;
+}
+
+/* 5. Natural Ticks Overlap (Pixel Perfect WhatsApp Style) */
+.status {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 16px; 
+  height: 12px;
+}
+
+.tick {
+  position: absolute;
+  fill: none;
+  stroke-width: 2.8;
+}
+
+.tick.big {
+  width: 11px;
+  height: 11px;
+  left: 0;
+  stroke: rgba(255, 255, 255, 0.4);
+}
+
+.tick.small {
+  width: 11px;
+  height: 11px;
+  left: 5px; /* Perfect overlap */
+  stroke: rgba(255, 255, 255, 0.4);
+}
+
+/* Blue tick color - status.seen ke liye */
+.status.seen .tick.small,
+.status.seen .tick.big {
+  stroke: #53bdeb;
+}
+
+/* 6. Layout Fix - Float use karne ke baad bubble stretch karne ke liye */
+.message::after {
+  content: "";
+  display: table;
+  clear: both;
+}
+/* Swipe animation ke liye bubble ko smooth banao */
+.message {
+    transition: transform 0.1s ease-out; /* Smooth slide back */
+    will-change: transform;
+}
+
+/* Swipe indicator jo piche dikhega (Optional but cool) */
+.swipe-indicator {
+    position: absolute;
+    right: -40px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 18px;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+}
+/* ===== UPDATED REPLY PREVIEW (THEME MATCHED) ===== */
+.reply-preview {
+    background: #17181A; /* Received message jaisa charcoal background */
+    border-left: 4px solid #00f7ff; /* Neon Teal accent */
+    padding: 10px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative; 
+    
+    /* 🔥 Positioning Fix */
+    top: -8px; 
+    z-index: 10;
+    width: 100%;
+    box-sizing: border-box;
+    
+    /* Design tweaks */
+    border-radius: 12px 12px 0 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    border-right: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.3);
+    gap: 12px;
+}
+
+.reply-content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+#replyUser { 
+    color: #00f7ff; /* Neon teal for username */
+    font-weight: 600; 
+    font-size: 12px; 
+    margin-bottom: 2px;
+    display: block; 
+}
+
+#replyText { 
+    color: #9aa5b1; /* Soft grey text like your 'name' class */
+    font-size: 13px; 
+    margin: 0; 
+    white-space: nowrap; 
+    overflow: hidden; 
+    text-overflow: ellipsis; 
+}
+
+#cancelReply { 
+    background: rgba(255, 255, 255, 0.05); 
+    border: none; 
+    color: #ff4d4d; 
+    font-size: 18px; 
+    cursor: pointer;
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    flex-shrink: 0;
+    transition: all 0.2s;
+}
+
+#cancelReply:hover {
+    background: rgba(255, 77, 77, 0.2);
+}
+
+
+
+.chat {
+    overflow-x: hidden; /* Messages side mein nahi bhagenge */
+    display: flex;
+    flex-direction: column;
+}
+/* WhatsApp Style Popup Positioning */
+.reaction-popup {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #1c1c1c; 
+    padding: 6px 12px;
+    border-radius: 30px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.7);
+    border: 1px solid rgba(0, 247, 255, 0.15);
+    position: absolute;
+    z-index: 1000;
+    width: fit-content;
+    white-space: nowrap;
+    visibility: hidden;
+    opacity: 0;
+    transform: scale(0.8);
+    transition: all 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+.reaction-popup.show {
+    visibility: visible;
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* RECEIVED: Left se start hoga */
+.message.received .reaction-popup {
+    left: 5px;
+    transform-origin: left bottom;
+}
+
+/* SENT: Right se start hoga */
+.message.sent .reaction-popup {
+    right: 5px;
+    transform-origin: right bottom;
+}
+
+.reaction-emoji {
+    font-size: 19px;
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+.reaction-emoji:hover { transform: scale(1.3); }
+
+/* Taaki bina reply ke ye box na dikhe */
+.hidden {
+    display: none !important;
+}
+
+/* WhatsApp style rounding: Jab preview khula ho toh niche ke corners round honge upar ke flat */
+#replyPreview:not(.hidden) {
+    display: flex !important; /* JS remove class karega tabhi dikhega */
+    border-radius: 20px 20px 0 0; /* Upar round, niche flat */
+    margin-bottom: -5px; /* Input bar se chipkaane ke liye */
+}
+
+#replyPreview:not(.hidden) + .input-bar {
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+}
+.reply-tag {
+    background: rgba(0, 0, 0, 0.2);
+    border-left: 3px solid #00f7ff;
+    padding: 4px 8px;
+    margin-bottom: 4px;
+    border-radius: 4px;
+    cursor: pointer;
+    max-width: 100%;
+    display: block;
+}
+
+/* Message highlight animation */
+.highlight-msg {
+    animation: flashHighlight 2s ease;
+}
+
+@keyframes flashHighlight {
+    0% { background-color: rgba(0, 247, 255, 0.5); transform: scale(1.02); }
+    100% { background-color: transparent; transform: scale(1); }
+}
+.reply-tag {
+    background: rgba(0, 0, 0, 0.2) !important;
+    border-left: 3px solid #00f7ff !important;
+    padding: 6px 10px !important;
+    margin-bottom: 8px !important;
+    border-radius: 8px !important;
+    cursor: pointer;
+    display: block !important;
+    max-width: 200px; /* Bubble se bahar na jaye */
+}
+
+.reply-tag small {
+    color: #00f7ff;
+    font-weight: bold;
+    display: block;
+    margin-bottom: 2px;
+}
+
+.reply-tag p {
+    margin: 0;
+    font-size: 12px;
+    color: #ccc;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+/* Message ke niche dikhne wale emojis */
+/* --- WHATSAPP FLOATING REACTIONS --- */
+.reactions-wrapper {
+    position: absolute;
+    bottom: -12px; /* Bubble ke niche nikal jayega */
+    display: flex;
+    gap: 3px;
+    z-index: 10; /* Sabse upar dikhega */
+    pointer-events: none; /* Click bubble pe hi jaye */
+}
+
+/* Received (Left) message ke liye position */
+.message.received .reactions-wrapper {
+    left: 45px; /* Avatar se thoda aage */
+}
+
+/* Sent (Right) message ke liye position */
+.message.sent .reactions-wrapper {
+    right: 10px;
+}
+
+.reaction-badge {
+    background: #202c33; /* Dark WhatsApp theme color */
+    border: 1.5px solid #0b141a; /* Bubble ke border se match karega */
+    padding: 2px 6px;
+    border-radius: 12px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    pointer-events: auto; /* Badge pe click kaam kare */
+}
+
+.reaction-badge small {
+    font-size: 10px;
+    color: #aebac1;
+    font-weight: bold;
+}
+.modal {
+  position: fixed; z-index: 2000;
+  left: 0; top: 0; width: 100%; height: 100%;
+  background: rgba(0, 0, 0, 0.85); /* Blackish blur background */
+  display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(8px); /* Chat blur ho jayegi piche */
+}
+
+.modal-content {
+  background: rgba(25, 25, 25, 0.9);
+  border: 1px solid rgba(0, 247, 255, 0.3); /* Neon border */
+  border-radius: 25px;
+  width: 85%; max-width: 320px;
+  overflow: hidden;
+  animation: modalPop 0.3s ease-out;
+}
+
+@keyframes modalPop {
+  from { transform: scale(0.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.modal-banner {
+  height: 80px;
+  background: linear-gradient(45deg, #00f7ff, #0066ff); /* Neon gradient */
+}
+
+.modal-body {
+  padding: 0 20px 20px 20px;
+  text-align: center;
+  margin-top: -50px; /* Photo ko banner ke upar chadhane ke liye */
+}
+
+#modalAvatar {
+  width: 100px; height: 100px;
+  border-radius: 50%;
+  border: 4px solid #191919;
+  box-shadow: 0 0 20px rgba(0, 247, 255, 0.4);
+  background: #222;
+}
+
+#modalName { color: #fff; margin: 15px 0 5px 0; font-size: 1.4rem; }
+#modalEmail { color: #aaa; font-size: 0.9rem; margin-bottom: 20px; }
+
+#closeModal {
+  background: transparent;
+  color: #00f7ff;
+  border: 1px solid #00f7ff;
+  padding: 10px 25px;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+#closeModal:hover { background: rgba(0, 247, 255, 0.1); }
+/* Container for avatar and dot */
+.avatar-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+/* The Online Dot */
+.online-dot {
+  width: 12px;
+  height: 12px;
+  background-color: #00ff00; /* Neon Green */
+  border: 2px solid #1a1a1a; /* Background se match karta border */
+  border-radius: 50%;
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  box-shadow: 0 0 8px #00ff00;
+  display: none; /* Default hidden */
+}
+
+/* Jab user online ho toh dot dikhao */
+.is-online .online-dot {
+  display: block;
+}
+
+/* Container jo avatar aur dot ko hold karega */
+.avatar-container {
+    position: relative;
+    display: inline-block;
+    width: 40px;  /* Jitna bada tera avatar hai */
+    height: 40px;
+    margin-right: 8px;
+}
+
+/* Tera purana avatar style (bas width/height check kar lena) */
+.avatar-container .avatar {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+}
+
+/* Neon Green Dot ka Asli Logic */
+.online-dot {
+    width: 12px;
+    height: 12px;
+    background-color: #00ff00; /* Ekdum chamakta hara */
+    border: 2px solid #1a1a1a; /* Background color se match karta border */
+    border-radius: 50%;
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    box-shadow: 0 0 8px #00ff00; /* Glow effect */
+    z-index: 10;
+}
+
+/* Jab messages grouped honge toh placeholder ke andar dot chhupa do */
+.avatar-placeholder .online-dot {
+    display: none !important;
+}
+.sidebar-content {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.sidebar-user-row {
+    background-color: #262729;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.sidebar-user-row:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.sidebar-avatar-wrapper {
+    position: relative;
+    width: 40px;
+    height: 40px;
+}
+
+.sidebar-avatar {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1.5px solid #00f7ff;
+}
+
+.online-status-dot {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    width: 10px;
+    height: 10px;
+    background: #00ff00;
+    border: 2px solid #1a1a1a;
+    border-radius: 50%;
+    box-shadow: 0 0 5px #00ff00;
+}
+
+.sidebar-user-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-user-name {
+    font-size: 0.9rem;
+    color: #fff;
+    font-weight: 500;
+}
+
+.sidebar-user-status {
+    font-size: 0.7rem;
+    color: #00f7ff;
+    opacity: 0.8;
+}
+/* Mobile Sidebar Toggle Logic */
+@media (max-width: 768px) {
+  .sidebar {
+    position: absolute;
+    left: -100%; /* Shuruat mein screen ke bahar */
+    z-index: 9999;
+    height: 100%%;
+    background: #121212; /* Dark background */
+    transition: left 0.3s ease;
+  }
+
+  .sidebar.active {
+    left: 0; /* Jab button click ho toh screen par aa jaye */
+  }
+}
+/* Mobile View setup */
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    left: -280px; /* Screen ke bahar */
+    top: 81px;
+    height: calc(100% - 165px);
+    width: 250px;
+    border-radius: 22px;
+    z-index: 99999;
+    background: #121212;
+    transition: left 0.3s ease;  
+}
+.sidebar.active {
+left: 0;
+}
+#sidebarOnlineHeader {
+  position: relative;
+  left: 20px;
+  color: #53c2b9;
+ }
+/* --- ADMIN THEME FULL FIX --- */
+
+/* 1. Base Bubble Style */
+.message.admin-theme {
+    border-left: 3px solid #00f7ff !important;
+    background: linear-gradient(to right, rgba(0, 247, 255, 0.1), rgba(0, 0, 0, 0.3)) !important;
+    box-shadow: inset 0 0 10px rgba(0, 247, 255, 0.15) !important;
+    max-width: 85% !important; /* Screen se bahar jane se rokega */
+    position: relative;
+}
+
+/* 2. Received Side (Left) Fix */
+.message-row:not(.me) .message.admin-theme.new-group {
+    margin-left: 4px !important; /* Avatar ke saath spacing fix */
+}
+
+/* 3. Sent Side (Right) Fix */
+.message-row.me .message.admin-theme {
+    border-left: none !important;
+    border-right: 3px solid #00f7ff !important; /* Right side par border */
+    background: linear-gradient(to left, rgba(0, 247, 255, 0.15), rgba(0, 0, 0, 0.4)) !important;
+}
+
+/* 4. Grouped Messages Fix (Alignment) */
+.message.admin-theme.grouped {
+    margin-top: 2px !important;
+}
+
+/* 5. Badge Alignment Fix */
+.admin-badge {
+    display: inline-flex !important;
+    align-items: center;
+    vertical-align: middle;
+    white-space: nowrap; /* Badge ko tootne se rokega */
+}
+
+/* 6. Text Contrast */
+.admin-theme .msg-text {
+    color: #fff !important;
+    word-wrap: break-word; /* Lambe messages ko screen ke andar rakhega 
+}
+/* --- ADMIN THEME (MATCHING YOUR RECEIVED STYLE) --- */
+
+.message.admin-theme {
+    /* Base Position & Shape from your code */
+    align-self: flex-start !important;
+    border-radius: 18px !important;
+    border-top-left-radius: 6px !important;
+    margin-left: 5px !important; /* Aapke Line 305 wala same margin */
+    
+    /* Your Theme Background + Teal Tint */
+    background: linear-gradient(180deg, #1C1D1F 0%, #17181A 50%, #121416 100%) !important;
+    backdrop-filter: blur(10px) !important;
+    
+    /* Teal Border & Glow */
+    border: 1px solid rgba(0, 247, 255, 0.4) !important; /* Normal white border ki jagah teal tint */
+    border-left: 4px solid #00f7ff !important; /* Premium left border */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3), inset 0 0 10px rgba(0, 247, 255, 0.1) !important;
+
+    /* Width & Text Fix */
+    max-width: 80% !important; 
+    padding: 8px 12px !important;
+    box-sizing: border-box !important;
+}
+
+/* 2. Received Side (Left Fix) jab naya group ho */
+.message-row:not(.me) .message.admin-theme.new-group {
+    margin-left: 10px !important; /* Avatar ke saath gap */
+}
+
+/* 3. Sent Side (Right Fix) - Jab aap bhejte ho */
+.message-row.me .message.admin-theme {
+    align-self: flex-end !important;
+    border-radius: 18px !important;
+    border-top-right-radius: 6px !important; /* Right side ke liye flip */
+    border-top-left-radius: 18px !important;
+    border-left: 1px solid rgba(0, 247, 255, 0.4) !important;
+    border-right: 4px solid #00f7ff !important; /* Border right side shift */
+    margin-right: 5px !important;
+}
+
+/* Text Word Wrap Fix */
+.admin-theme .msg-text {
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+}
+
+.admin-btn-group {
+    margin-top: 15px;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}

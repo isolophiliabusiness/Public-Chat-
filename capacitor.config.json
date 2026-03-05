@@ -1,0 +1,9 @@
+{
+  "appId": "com.isolophilia.community",
+  "appName": "Isolophilia Community",
+  "webDir": "www",
+  "server": {
+    "url": "https://public-chat-server-6jrt.onrender.com",
+    "cleartext": true
+  }
+}
