@@ -1,51 +1,13 @@
-// --- LINE 1 SE START KARO ---
-if (window.Capacitor && window.Capacitor.Plugins) {
-    const { App, Browser } = window.Capacitor.Plugins;
-
-    // Ye listener check karega ki kab login success ho kar wapas app khule
-    App.addListener('appUrlOpen', (data) => {
-        console.log("App opened with URL:", data.url);
-        
-        // Agar URL mein login success ka signal mile (Check your redirect URL)
-        if (data.url.includes('auth/google/callback') || data.url.includes('index.html')) {
-            Browser.close(); // Ye wo annoying Chrome header wala window band kar dega
-        }
-    });
-}
-// --- LINE 1 FINISH ---
-
-
-// Ye Capacitor ka special browser tool hai
-const openGoogleLogin = async () => {
-  // Capacitor ke built-in browser mein kholne ke liye
-  if (window.Capacitor && window.Capacitor.Plugins.Browser) {
-    await window.Capacitor.Plugins.Browser.open({ 
-      url: 'https://public-chat-server-6jrt.onrender.com/auth/google' 
-    });
-  } else {
-    // Agar browser mein check kar rahe ho toh normal redirect
-    window.location.href = 'https://public-chat-server-6jrt.onrender.com/auth/google';
-  }
-};
-
-// Button par click hote hi ye function chalega
-document.addEventListener('DOMContentLoaded', () => {
-  const loginBtn = document.getElementById("googleLoginBtn");
-  if (loginBtn) {
-    loginBtn.onclick = openGoogleLogin;
-  }
-});
-
-
+// app.js code full and final
 let ws;
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", () =>{
 
   // Logout handle function
   function handleLogout() {
     localStorage.removeItem("chatUser");   // purana user remove
     window.currentUser = null;             // global variable clear
     window.currentAvatar = null;           // avatar bhi clear
-   window.location.href = "landing.html"; 
+    window.location.reload();              // page reload → redirect login
   }
 
   // 3-dot menu toggle
@@ -60,26 +22,19 @@ if(menu) {
 }
 
 // click outside to close
-document.addEventListener("click", () => {
+document.addEventListener("click", () =>{
   menuDropdown.classList.remove("show");
 });
 
 // Logout button
-// Logout button implementation
 const logoutBtn = document.getElementById("logoutBtn");
 if(logoutBtn) {
   logoutBtn.addEventListener("click", () => {
-    // 1. Local Storage saaf karo
     localStorage.removeItem("chatUser");
     window.currentUser = null;
     window.currentAvatar = null;
-    
-    // 2. WebSocket band karo taaki server ko pata chale banda gaya
-    if(ws) ws.close();
-
-    // 3. App ko wapas Landing page par bhejo
-    // Note: index.html se landing.html par redirect
-    window.location.replace("landing.html"); 
+    // Ab refresh nahi, seedha server ko request bhejenge logout ke liye
+    window.location.href = "/logout"; 
   });
 }
 
@@ -159,7 +114,7 @@ let isTyping = false;
 
   /* ================= WEBSOCKET ================= */
   function connectWS() {
-  ws = new WebSocket("wss://public-chat-server-6jrt.onrender.com");
+    ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host);
     ws.onopen = () => {
       reconnectDelay = 2000;
       retryCount = 0;
@@ -259,7 +214,7 @@ function addMessage(user, text, isHistory = false, time = Date.now(), messageId 
         div.style.fontSize = "0.85em";
         div.style.fontWeight = "bold";
         div.style.boxShadow = "0 0 10px rgba(255, 152, 0, 0.2)";
-        
+
         div.textContent = text; // Seedha text daalo
         wrapper.appendChild(div);
         chat.appendChild(wrapper); // System msg ko yahin khatam karo
@@ -574,7 +529,7 @@ msgEl.className = "msg-text";
 
     lastMessageUser = user;
     lastMessageTime = time;
-} // <--- Function closing brace
+} //<--- Function closing brace
 
 
   function updateMessage(msg) {
@@ -670,7 +625,7 @@ function sendMessage() {
   sendBtn.addEventListener("click", sendMessage);
   input.addEventListener("keydown", e => { if(e.key === "Enter") sendMessage(); });
 /* ================= SEND TYPING EVENT ================= */
-input.addEventListener("input", () => {
+input.addEventListener("input", () =>{
   if (!ws || ws.readyState !== WebSocket.OPEN) return;
 
   if (!isTyping) {
@@ -694,7 +649,7 @@ function updateLiveUptimeDisplay(seconds) {
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
     const secs = seconds % 60;
-    
+
     // Format: 0h 0m 0s (Tujhe jaisa pasand ho)
     uptimeElem.innerText = `${hrs}h ${mins}m ${secs}s`;
 }
@@ -705,7 +660,7 @@ function updateLiveUptimeDisplay(seconds) {
 
 // handleWSMessage ke andar 'all-members-list' block
 if (data.type === "all-members-list") {
-    
+
     // ✅ SAFE TIMER LOGIC: Purane timer ko pehle clear karo
     if (data.uptime !== undefined) {
         if (uptimeInterval) {
@@ -714,7 +669,7 @@ if (data.type === "all-members-list") {
         }
 
         localUptime = data.uptime;
-        
+
         // Naya fresh timer shuru
         uptimeInterval = setInterval(() => {
             localUptime++;
@@ -761,7 +716,7 @@ if (data.type === "all-members-list") {
     } else {
         data.users.forEach(user => {
             const tr = document.createElement("tr");
-            
+
             const muteText = user.isMuted ? "Unmute" : "Mute";
             const banText = user.isBanned ? "Unban" : "Ban";
 
@@ -821,7 +776,7 @@ if (data.type === "all-members-list") {
                 </div>
             </div>
         `;
-        
+
         // Browser se data saaf karo taaki wo wapas na ghuse
         localStorage.removeItem("chatUser");
         if(ws) ws.close(); 
@@ -854,7 +809,7 @@ if (data.type === "mute-notice") {
             inputField.value = ""; // Mute hote hi likha hua text saaf kar do
             inputField.placeholder = "🤐 Admin has muted you...";
             inputField.style.background = "rgba(255, 0, 0, 0.05)"; // Halka red tint (optional)
-            
+
             if(sendBtn) {
                 sendBtn.style.pointerEvents = "none";
                 sendBtn.style.opacity = "0.5";
@@ -863,7 +818,7 @@ if (data.type === "mute-notice") {
             inputField.disabled = false;
             inputField.placeholder = "Type a message...";
             inputField.style.background = "transparent";
-            
+
             if(sendBtn) {
                 sendBtn.style.pointerEvents = "auto";
                 sendBtn.style.opacity = "1";
@@ -882,44 +837,35 @@ if (data.type === "typing") {
   }
 }
 // Line 838 ke upar add karein
-// handleWSMessage function ke andar ye block check karo:
 if (data.type === "all-reports-list") {
-    const container = document.getElementById("banListContent");
-    const modalTitle = document.querySelector("#banListModal h3");
-    
-    if (modalTitle) modalTitle.innerText = "🚨 User Reports";
+    const container = document.getElementById("banListContent"); // Hum isi container ko reuse kar rahe hain
+    const title = document.querySelector("#banListModal h3"); // Modal ki heading change karne ke liye
+    if(title) title.innerText = "🚨 User Reports";
+
     if (!container) return;
+    container.innerHTML = "";
 
-    container.innerHTML = ""; // Purana data saaf
-
-    if (!data.reports || data.reports.length === 0) {
-        container.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:30px; color:#94a3b8; font-size:0.8rem;">No reports found. Sab shareef hain! ✨</td></tr>`;
+    if (data.reports.length === 0) {
+        container.innerHTML = `<tr><td colspan="2" style="text-align:center; padding:20px; color:#aaa;">No reports found.</td></tr>`;
     } else {
         data.reports.forEach(rep => {
             const tr = document.createElement("tr");
-            tr.style.borderBottom = "1px solid rgba(255,255,255,0.05)";
-            
             tr.innerHTML = `
-                <td style="padding: 10px 5px; width: 40%;">
-                    <div style="color: #ff4757; font-weight: bold; font-size: 0.75rem;">Target: ${rep.targetName}</div>
-                    <div style="color: #64748b; font-size: 0.6rem;">By: ${rep.reportedBy}</div>
+                <td style="padding: 10px; color: #fff; font-size: 0.75rem; border-bottom: 1px solid #333;">
+                    <strong style="color: #ff4757;">Target: ${rep.targetName}</strong><br>
+                    <small>By: ${rep.reportedBy}</small>
                 </td>
-                <td style="padding: 10px 5px; color: #cbd5e1; font-size: 0.7rem; max-width: 100px; word-wrap: break-word;">
+                <td style="padding: 10px; color: #cbd5e1; font-size: 0.7rem; border-bottom: 1px solid #333;">
                     ${rep.reason}
-                </td>
-                <td style="padding: 10px 5px; text-align: right;">
-                    <button onclick="window.sendAdminAction('${rep.targetEmail}', '${rep.targetName}', 'ban')" 
-                            style="background: #ef4444; color: white; border: none; padding: 4px 8px; border-radius: 4px; font-size: 9px; cursor: pointer; font-weight: bold;">
-                        Ban
-                    </button>
+                    <div style="margin-top:5px;">
+                        <button onclick="window.sendAdminAction('${rep.targetEmail}', '${rep.targetName}', 'ban')" style="background:red; color:white; border:none; padding:3px 8px; border-radius:4px; font-size:8px;">Ban User</button>
+                    </div>
                 </td>
             `;
             container.appendChild(tr);
         });
     }
-    // Agar modal hidden hai toh dikhao
-    const modal = document.getElementById("banListModal");
-    if(modal) modal.classList.remove("hidden");
+    document.getElementById("banListModal").classList.remove("hidden");
     return;
 }
 
@@ -1158,7 +1104,7 @@ window.openProfile = function(name, avatar, role = "user", email = "") {
     if (modal && mName && mAvatar) {
         mName.textContent = name;
         mAvatar.src = avatar || "logo.png";
-        
+
         if (role === "admin") {
             mEmail.innerHTML = `<span style="color: #00f7ff; font-weight: bold;">👑 Server Owner / Admin</span>`;
         } else {
@@ -1220,7 +1166,7 @@ if (closeModalBtn) {
     onlineUsersList.forEach(user => {
       const userRow = document.createElement("div");
       userRow.className = "sidebar-user-row";
-      
+
       // Agar wo khud hai (Me), toh thoda alag dikhao (Optional)
       const isMe = user.email === window.currentEmail; // Make sure currentEmail set ho
 
@@ -1251,7 +1197,7 @@ if (closeModalBtn) {
 const toggleBtn = document.getElementById("toggleSidebar");
 const sidebar = document.querySelector(".sidebar");
 
-if (toggleBtn && sidebar) {
+if (toggleBtn&&sidebar) {
   toggleBtn.addEventListener("click", (e) => {
     e.stopPropagation();
     sidebar.classList.toggle("active");
@@ -1281,13 +1227,13 @@ if(openBanBtn) {
         if (ws && ws.readyState === WebSocket.OPEN) {
             // ✅ Change here: Purane 'get-ban-list' ko replace karke ye likho
             ws.send(JSON.stringify({ type: "get-all-members" })); 
-            
+
             // Modal khulne se pehle loader dikha do (Optional but looks professional)
             const container = document.getElementById("banListContent");
             if(container) {
                 container.innerHTML = `<tr><td colspan="2" style="text-align:center; padding:20px; color:#6b7280;">Loading members...</td></tr>`;
             }
-            
+
             banModal.classList.remove("hidden");
         } 
     };
@@ -1311,7 +1257,7 @@ if (userSearchInput) {
     userSearchInput.addEventListener("input", (e) => {
         const term = e.target.value.toLowerCase();
         const rows = document.querySelectorAll("#banListContent tr");
-        
+
         rows.forEach(row => {
             const text = row.innerText.toLowerCase();
             // Loader row ko ignore karein
@@ -1326,7 +1272,7 @@ if (viewReportsBtn) {
         if (ws && ws.readyState === WebSocket.OPEN) {
             const container = document.getElementById("banListContent");
             if(container) container.innerHTML = `<tr><td colspan="2" style="text-align:center; padding:20px; color:#aaa;">Fetching reports...</td></tr>`;
-            
+
             // Server se reports mangwao
             ws.send(JSON.stringify({ type: "get-reports" }));
 
@@ -1341,11 +1287,11 @@ if (backBtn) {
         if (ws && ws.readyState === WebSocket.OPEN) {
             // Wapas members ki list maango
             ws.send(JSON.stringify({ type: "get-all-members" }));
-            
+
             // UI Reset: Back button chupao, Report button dikhao
             backBtn.classList.add("hidden");
             viewReportsBtn.classList.remove("hidden");
-            
+
             // Heading wapas sahi karo
             if(modalTitle) modalTitle.innerText = "Manage Users";
         }
@@ -1354,7 +1300,7 @@ if (backBtn) {
 
 
 // --- AB YAHAN DOMContentLoaded KO BAND KARO ---
-}); // <--- Ye line 1 DOMContentLoaded wala bracket hai
+}); //<--- Ye line 1 DOMContentLoaded wala bracket hai
 
 
 
@@ -1363,7 +1309,7 @@ document.addEventListener('touchstart', function (event) {
     if (event.touches.length > 1) {
         event.preventDefault(); 
     }
-}, { passive: false }); // <--- Check karo ye false hona chahiye
+}, { passive: false }); //<--- Check karo ye false hona chahiye
 
 let lastTouchEnd = 0;
 document.addEventListener('touchend', function (event) {
@@ -1372,11 +1318,11 @@ document.addEventListener('touchend', function (event) {
         event.preventDefault(); 
     }
     lastTouchEnd = now;
-}, { passive: false }); // <--- Yahan bhi false add kar do safety ke liye
-/* ================= SECURITY & ANTI-ANNOYING FEATURES ================= */
+}, { passive: false }); //<--- Yahan bhi false add kar do safety ke liye
+/* ================= SECURITY&ANTI-ANNOYING FEATURES ================= */
 
 // 1. Right Click (Context Menu) Block
-document.addEventListener('contextmenu', (e) => {
+document.addEventListener('contextmenu', (e) =>{
     // Input field par right click allow rakhte hain taaki paste kar sakein agar zaroorat ho
     if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
         e.preventDefault();
@@ -1384,20 +1330,20 @@ document.addEventListener('contextmenu', (e) => {
 }, false);
 
 // 2. Zoom Block (Ctrl + Plus/Minus/Wheel)
-document.addEventListener('keydown', (e) => {
+document.addEventListener('keydown', (e) =>{
     if (e.ctrlKey && (e.key === '+' || e.key === '-' || e.key === '=' || e.key === '0')) {
         e.preventDefault();
     }
 }, { passive: false });
 
-document.addEventListener('wheel', (e) => {
+document.addEventListener('wheel', (e) =>{
     if (e.ctrlKey) {
         e.preventDefault();
     }
 }, { passive: false });
 
-// 3. Inspect Element & DevTools Shortcuts Block
-document.addEventListener('keydown', (e) => {
+// 3. Inspect Element&DevTools Shortcuts Block
+document.addEventListener('keydown', (e) =>{
     // F12 block
     if (e.key === 'F12') {
         e.preventDefault();
@@ -1440,7 +1386,7 @@ window.sendAdminAction = function(email, name, action) {
         // Modal hide karne ka logic (optional)
         const banModal = document.getElementById("banListModal");
         if(banModal) banModal.classList.add("hidden");
-        
+
         console.log(`✅ Action ${action} sent for ${email}`);
     } else {
         alert("Connection lost! Reconnecting...");
@@ -1450,12 +1396,12 @@ window.sendAdminAction = function(email, name, action) {
 /* ================= ANTI-INSPECT TRAP ================= */
 
 // 1. Debugger Trap: Ise uncomment tabhi karna jab site live ho
-setInterval(() => {
+setInterval(() =>{
     // debugger; 
 }, 1000);
 
 // 2. Smart Resize Detection (Sirf Desktop ke liye)
-window.addEventListener('resize', () => {
+window.addEventListener('resize', () =>{
     // Mobile par keyboard khulne par height change hoti hai, 
     // isliye width check zaroori hai Inspect Element pakadne ke liye.
     const threshold = 200;
@@ -1470,23 +1416,4 @@ window.addEventListener('resize', () => {
         document.body.style.filter = "none";
         document.body.style.pointerEvents = "auto";
     }
-}); // <--- Yahan pehle function khatam ho raha tha, ab Event Listener bhi band hai.
-// Landing page ke button ko functional banane ke liye
-document.addEventListener('DOMContentLoaded', () => {
-    const loginBtn = document.getElementById("googleLoginBtn");
-    
-    if (loginBtn) {
-        loginBtn.addEventListener('click', async () => {
-            console.log("Login button clicked!");
-            // Agar Capacitor app hai toh plugin use karega
-            if (window.Capacitor && window.Capacitor.Plugins.Browser) {
-                await window.Capacitor.Plugins.Browser.open({ 
-                    url: 'https://public-chat-server-6jrt.onrender.com/auth/google' 
-                });
-            } else {
-                // Browser mein normal redirect
-                window.location.href = 'https://public-chat-server-6jrt.onrender.com/auth/google';
-            }
-        });
-    }
-});
+}); //<--- Yahan pehle function khatam ho raha tha, ab Event Listener bhi band hai.

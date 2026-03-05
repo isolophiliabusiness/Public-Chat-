@@ -5,7 +5,7 @@
  <meta name="robots" content="noindex, nofollow">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Isolophilia Community</title>
-<!--   <meta http-equiv="Content-Security-Policy" content="img-src 'self' data: https://*.googleusercontent.com https://res.cloudinary.com;"> -->
+<!--<meta http-equiv="Content-Security-Policy" content="img-src 'self' data: https://*.googleusercontent.com https://res.cloudinary.com;">-->
    <meta http-equiv="Content-Security-Policy" content="
   default-src 'self'; 
   script-src 'self' 'unsafe-inline'; 
@@ -64,7 +64,7 @@
    <p id="dateDisplay" style="text-align: center; color: #fff; font-size: 14px; margin-top: 10px;"></p>
   <!-- CHAT AREA START -->
   <div class="chat-wrapper">
-    
+
     <aside class="sidebar">
 <div class="sidebar-header" id="sidebarOnlineHeader">
     <i class="fa-solid fa-users"></i> Online Users
@@ -98,6 +98,7 @@
     </div>
   </div>
 
+<script src="/app.js"></script>
 <div id="userModal" class="modal hidden">
   <div class="modal-content">
     <div class="modal-banner"></div> <div class="modal-body">
@@ -112,9 +113,9 @@
 
 <div id="banListModal" class="hidden" style="position: fixed; inset: 0; z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 35px;">
     <div id="closeBanListOverlay" style="position: absolute; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);"></div>
-    
+
     <div style="position: relative; width: 100%; max-width: 400px; background: linear-gradient(135deg, #050505 0%, #001f3f 40%, #0074D9 100%); border: 1px solid rgba(0, 247, 255, 0.4); border-radius: 20px; padding: 10px; box-shadow: 0 0 25px rgba(0, 247, 255, 0.2); animation: panelPop 0.3s ease-out;">
-        
+
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
             <div style="display: flex; align-items: center; gap: 0;">
                 <div style="background: rgba(255, 255, 255, 0); padding: 8px; border-radius: 10px; color: #00f7ff;">
@@ -162,7 +163,6 @@
         </div>
     </div>
 </div>
-<script src="app.js"></script> 
 
 </body> 
 </html>
