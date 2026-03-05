@@ -1,3 +1,20 @@
+// --- LINE 1 SE START KARO ---
+if (window.Capacitor && window.Capacitor.Plugins) {
+    const { App, Browser } = window.Capacitor.Plugins;
+
+    // Ye listener check karega ki kab login success ho kar wapas app khule
+    App.addListener('appUrlOpen', (data) => {
+        console.log("App opened with URL:", data.url);
+        
+        // Agar URL mein login success ka signal mile (Check your redirect URL)
+        if (data.url.includes('auth/google/callback') || data.url.includes('index.html')) {
+            Browser.close(); // Ye wo annoying Chrome header wala window band kar dega
+        }
+    });
+}
+// --- LINE 1 FINISH ---
+
+
 // Ye Capacitor ka special browser tool hai
 const openGoogleLogin = async () => {
   // Capacitor ke built-in browser mein kholne ke liye
@@ -28,7 +45,7 @@ document.addEventListener("DOMContentLoaded", () => {
     localStorage.removeItem("chatUser");   // purana user remove
     window.currentUser = null;             // global variable clear
     window.currentAvatar = null;           // avatar bhi clear
-    window.location.reload();              // page reload → redirect login
+   window.location.href = "landing.html"; 
   }
 
   // 3-dot menu toggle
@@ -48,16 +65,21 @@ document.addEventListener("click", () => {
 });
 
 // Logout button
+// Logout button implementation
 const logoutBtn = document.getElementById("logoutBtn");
 if(logoutBtn) {
   logoutBtn.addEventListener("click", () => {
+    // 1. Local Storage saaf karo
     localStorage.removeItem("chatUser");
     window.currentUser = null;
     window.currentAvatar = null;
     
-    // YAHAN BADLAV HAI: location.href ki jagah reload use karein
-    // Taaki app wapas landing page ya login screen par aa jaye, browser mein na jaye
-    window.location.replace("/"); 
+    // 2. WebSocket band karo taaki server ko pata chale banda gaya
+    if(ws) ws.close();
+
+    // 3. App ko wapas Landing page par bhejo
+    // Note: index.html se landing.html par redirect
+    window.location.replace("landing.html"); 
   });
 }
 
