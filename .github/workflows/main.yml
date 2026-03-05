@@ -5,24 +5,36 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Install Deps
+
+      - name: Install Dependencies and Sync
         run: |
           npm install
           npm install @capacitor/android
           mkdir -p www
-          cp index.html style.css app.js logo.png default-avatar.png www/
+          cp index.html style.css app.js logo.png default-avatar.png www/ || true
           npx cap add android || true
           npx cap sync android
-      - name: Build APK
+
+      - name: Build APK with Gradle
         run: |
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug
-      - name: Upload APK
+
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Isolophilia-Chat-App
