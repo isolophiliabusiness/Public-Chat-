@@ -1449,3 +1449,22 @@ window.addEventListener('resize', () => {
         document.body.style.pointerEvents = "auto";
     }
 }); // <--- Yahan pehle function khatam ho raha tha, ab Event Listener bhi band hai.
+// Landing page ke button ko functional banane ke liye
+document.addEventListener('DOMContentLoaded', () => {
+    const loginBtn = document.getElementById("googleLoginBtn");
+    
+    if (loginBtn) {
+        loginBtn.addEventListener('click', async () => {
+            console.log("Login button clicked!");
+            // Agar Capacitor app hai toh plugin use karega
+            if (window.Capacitor && window.Capacitor.Plugins.Browser) {
+                await window.Capacitor.Plugins.Browser.open({ 
+                    url: 'https://public-chat-server-6jrt.onrender.com/auth/google' 
+                });
+            } else {
+                // Browser mein normal redirect
+                window.location.href = 'https://public-chat-server-6jrt.onrender.com/auth/google';
+            }
+        });
+    }
+});
