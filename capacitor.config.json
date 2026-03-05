@@ -6,7 +6,9 @@
     "url": "https://public-chat-server-6jrt.onrender.com",
     "cleartext": true,
     "allowNavigation": [
-      "tera-app-name.onrender.com"
+      "public-chat-server-6jrt.onrender.com",
+      "*.googleusercontent.com",
+      "accounts.google.com"
     ]
   }
 }
