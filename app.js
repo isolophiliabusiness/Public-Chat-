@@ -1,3 +1,25 @@
+// Ye Capacitor ka special browser tool hai
+const openGoogleLogin = async () => {
+  // Capacitor ke built-in browser mein kholne ke liye
+  if (window.Capacitor && window.Capacitor.Plugins.Browser) {
+    await window.Capacitor.Plugins.Browser.open({ 
+      url: 'https://public-chat-server-6jrt.onrender.com/auth/google' 
+    });
+  } else {
+    // Agar browser mein check kar rahe ho toh normal redirect
+    window.location.href = 'https://public-chat-server-6jrt.onrender.com/auth/google';
+  }
+};
+
+// Button par click hote hi ye function chalega
+document.addEventListener('DOMContentLoaded', () => {
+  const loginBtn = document.getElementById("googleLoginBtn");
+  if (loginBtn) {
+    loginBtn.onclick = openGoogleLogin;
+  }
+});
+
+
 let ws;
 document.addEventListener("DOMContentLoaded", () => {
 
