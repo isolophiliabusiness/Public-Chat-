@@ -6,4 +6,5 @@ data/
 data-dev/
 .cache/
 .thumbnails/
-
+eslint.config.mjs/
+.well-known/
