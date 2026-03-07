@@ -21,5 +21,13 @@
     "uuid": "^13.0.0",
     "ws": "^8.19.0",
     "xss": "^1.0.15"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.0.3",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.5",
+    "globals": "^17.4.0",
+    "prettier": "^3.8.1"
   }
 }

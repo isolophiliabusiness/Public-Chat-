@@ -68,9 +68,9 @@ if(logoutBtn) {
   const sendBtn = document.getElementById("sendBtn");
   const newMsgBtn = document.getElementById("newMsgBtn");
 
-/* ================= CHAT SOUNDS ================= */
-const sendSound = new Audio("send.mp3");
-const receiveSound = new Audio("received.mp3");
+/* ================= CHAT SOUNDS (UPDATED PATH) ================= */
+const sendSound = new Audio("assets/audio/send.mp3");
+const receiveSound = new Audio("assets/audio/received.mp3");
 
 sendSound.preload = "auto";
 receiveSound.preload = "auto";

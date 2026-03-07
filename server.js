@@ -237,33 +237,33 @@ app.get("/logout", (req, res, next) => {
 });
 
 
-/* ================= ROUTES (MODIFIED) ================= */
+/* ================= ROUTES (MODIFIED FOR NEW STRUCTURE) ================= */
 
-// Ye function check karta hai ki user logged in hai ya nahi
+// Function to check if user is authenticated
 function ensureAuth(req, res, next) {
   if (req.isAuthenticated()) return next();
-  // Agar login nahi hai, toh seedha Google par mat bhejo, Landing page dikhao
-  res.sendFile(__dirname + "/landing.html"); 
+  // Agar login nahi hai, toh seedha public/landing.html dikhao
+  res.sendFile(__dirname + "/public/landing.html"); 
 }
 
-// Main Route: Yahan decide hoga ki kya dikhana hai
+// Main Route
 app.get("/", (req, res) => {
   if (req.isAuthenticated()) {
-    // Agar banda login hai, toh Chat Hub (index.html) bhejo
-    res.sendFile(__dirname + "/index.html");
+    // Login user ke liye public/index.html
+    res.sendFile(__dirname + "/public/index.html");
   } else {
-    // Agar login nahi hai, toh tera Premium Landing Page dikhao
-    res.sendFile(__dirname + "/landing.html");
+    // Non-login user ke liye public/landing.html
+    res.sendFile(__dirname + "/public/landing.html");
   }
 });
 
-// Ye zaroori hai taaki dashboard ke andar auth check rahe
+// Chat Dashboard Route
 app.get("/chat", ensureAuth, (req, res) => {
-  res.sendFile(__dirname + "/index.html");
+  res.sendFile(__dirname + "/public/index.html");
 });
 
-
-app.use(express.static(__dirname));
+// ZAROORI: Server ko batao ki saari assets 'public' folder mein hain
+app.use(express.static(__dirname + "/public"));
 
 const server = require("http").createServer(app);
 
