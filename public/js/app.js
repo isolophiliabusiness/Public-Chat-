@@ -530,21 +530,157 @@ msgEl.className = "msg-text";
     lastMessageUser = user;
     lastMessageTime = time;
 } //<--- Function closing brace
+function updateMessage(msg) {
+    if (!msg) return;
+    const mId = msg._id || msg.id;
+    if (!mId) return;
 
-
-  function updateMessage(msg) {
-    const messageDiv = document.querySelector(`[data-id='${msg._id}']`);
+    const messageDiv = document.querySelector(`[data-id="${mId}"]`);
     if (!messageDiv) return;
-    const emojis = messageDiv.querySelectorAll(".reaction-emoji");
-    emojis.forEach(el => {
-      const emoji = el.textContent;
-      const users = msg.reactions?.[emoji] || [];
-      if (users.includes(window.currentUser)) {
-        el.style.background = "rgba(0,150,255,0.35)";
-        el.style.borderRadius = "50%";
-      } else { el.style.background = "transparent"; }
+
+    let wrapper = messageDiv.querySelector(".msg-reactions-wrapper");
+    if (!wrapper) {
+        wrapper = document.createElement("div");
+        wrapper.className = "msg-reactions-wrapper";
+        messageDiv.appendChild(wrapper);
+    }
+
+    wrapper.innerHTML = ""; 
+    
+    // GAP FIX: Reaction nahi toh space nahi
+    if (!msg.reactions || Object.keys(msg.reactions).length === 0) {
+        messageDiv.style.marginBottom = "4px"; 
+        wrapper.style.display = "none";
+        return;
+    }
+
+    // Reaction aane par smooth gap
+    messageDiv.style.marginBottom = "20px"; 
+    messageDiv.style.position = "relative";
+    messageDiv.style.overflow = "visible";
+    wrapper.style.display = "flex";
+
+    wrapper.style.cssText = `
+        position: absolute;
+        bottom: -12px;
+        display: flex;
+        align-items: center;
+        z-index: 100;
+        cursor: pointer;
+        pointer-events: auto;
+        background: rgba(11, 20, 26, 0.6);
+        border-radius: 12px;
+        padding: 2px 4px;
+    `;
+
+    const isMe = messageDiv.classList.contains('me');
+    wrapper.style.right = isMe ? "8px" : "auto";
+    wrapper.style.left = isMe ? "auto" : "8px";
+
+    const reactionEntries = Object.entries(msg.reactions).filter(([_, users]) => users.length > 0);
+    
+    // WhatsApp Stacking (Overlap)
+    reactionEntries.slice(0, 3).forEach(([emoji, users], index) => {
+        const pill = document.createElement("span");
+        pill.style.cssText = `
+            background: #202c33;
+            border: 1.5px solid #0b141a;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 11px;
+            margin-left: ${index === 0 ? "0" : "-6px"};
+            box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+        `;
+        pill.innerText = emoji;
+        wrapper.appendChild(pill);
     });
-  }
+
+    const totalCount = reactionEntries.reduce((sum, [_, users]) => sum + users.length, 0);
+    if (totalCount > 1) {
+        const countBadge = document.createElement("span");
+        countBadge.style.cssText = `color: #00e5ff; font-size: 10px; margin-left: 5px; font-weight: bold;`;
+        countBadge.innerText = totalCount;
+        wrapper.appendChild(countBadge);
+    }
+
+    // Click to Open Telegram Style Popup
+    wrapper.onclick = (e) => {
+        e.stopPropagation();
+        showTelegramStyleReactions(msg.reactions);
+    };
+}
+
+// 🚩 TELEGRAM STYLE POPUP (WITH NAMES & THEME MATCH)
+function showTelegramStyleReactions(reactions) {
+    const oldBox = document.getElementById("reaction-detail-popup");
+    if (oldBox) oldBox.remove();
+
+    const detailBox = document.createElement("div");
+    detailBox.id = "reaction-detail-popup";
+    
+    // Theme colors matching your "Isophilia" screenshot (Cyan/Neon)
+    detailBox.style.cssText = `
+        position: fixed;
+        bottom: 100px;
+        left: 50%;
+        transform: translateX(-50%) scale(0.9);
+        background: rgba(15, 25, 30, 0.95);
+        backdrop-filter: blur(10px);
+        padding: 12px;
+        border-radius: 20px;
+        z-index: 2000;
+        min-width: 220px;
+        max-width: 280px;
+        border: 1px solid #00e5ff;
+        box-shadow: 0 0 20px rgba(0, 229, 255, 0.3);
+        color: white;
+        transition: transform 0.2s ease;
+    `;
+
+    let contentHtml = `<div style="text-align:center; font-size: 13px; color: #00e5ff; margin-bottom: 10px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">Reactions</div>`;
+    
+    contentHtml += `<div style="max-height: 250px; overflow-y: auto; padding-right: 5px;">`;
+
+    Object.entries(reactions).forEach(([emoji, users]) => {
+        if(users.length > 0) {
+            users.forEach(userName => {
+                // Formatting name: Agar email hai toh '@' se pehle wala part lo
+                const displayName = userName.split('@')[0]; 
+                
+                contentHtml += `
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 12px;">
+                    <span style="font-size: 14px; color: #fff;">${displayName}</span>
+                    <span style="font-size: 16px;">${emoji}</span>
+                </div>`;
+            });
+        }
+    });
+    
+    contentHtml += `</div>`;
+
+    detailBox.innerHTML = contentHtml;
+    document.body.appendChild(detailBox);
+
+    // Animation Effect
+    setTimeout(() => { detailBox.style.transform = "translateX(-50%) scale(1)"; }, 10);
+
+    // Click outside to close (Telegram style)
+    const closeListener = (e) => {
+        if (!detailBox.contains(e.target)) {
+            detailBox.style.transform = "translateX(-50%) scale(0.9)";
+            detailBox.style.opacity = "0";
+            setTimeout(() => detailBox.remove(), 200);
+            window.removeEventListener('click', closeListener);
+        }
+    };
+    
+    setTimeout(() => { window.addEventListener('click', closeListener); }, 100);
+}
+
 function setStatusVisual(statusEl, state) {
   const small = statusEl.querySelector(".tick.small");
   const big = statusEl.querySelector(".tick.big");
@@ -959,7 +1095,13 @@ addMessage(
 
 }
 
-    if (data.type === "chat-update") updateMessage(data.msg);
+// Dono types ko handle karo
+if (data.type === "chat-update" || data.type === "reaction-update") {
+    // Agar server reactions bhej raha hai toh use msg object jaisa format kar lo
+    const msgData = data.msg || { _id: data.msgId, reactions: data.reactions };
+    updateMessage(msgData);
+}
+
     if (data.type === "status-update") updateMessageStatus(data.msgId, data.state);
     // --- HANDLE MESSAGE DELETION ---
     if (data.type === "msg-deleted") {
