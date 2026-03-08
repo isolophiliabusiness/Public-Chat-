@@ -67,6 +67,11 @@ if(logoutBtn) {
   const input = document.getElementById("messageInput");
   const sendBtn = document.getElementById("sendBtn");
   const newMsgBtn = document.getElementById("newMsgBtn");
+  // Line 70 ke neeche ye add kar:
+  const mediaBtn = document.getElementById("mediaBtn"); // Plus icon
+  const mediaSheet = document.getElementById("mediaSheet"); // Bottom sheet div
+  const closeSheet = document.getElementById("closeSheet"); // Overlay
+  const hiddenFileInput = document.getElementById("hiddenFileInput"); // Hidden input
 
 /* ================= CHAT SOUNDS (UPDATED PATH) ================= */
 const sendSound = new Audio("assets/audio/send.mp3");
@@ -1235,6 +1240,52 @@ function removeTypingIndicator() {
      currentReplyData = null;
      document.getElementById("replyPreview").classList.add("hidden");
  };
+
+ /* ================= BOTTOM SHEET (GALLERY/FILES) LOGIC ================= */
+if (mediaBtn && mediaSheet) {
+    // Plus icon click par sheet dikhao
+    mediaBtn.onclick = () => {
+        mediaSheet.classList.remove("hidden");
+    };
+
+    // Bahar click karne par sheet band
+    if (closeSheet) {
+        closeSheet.onclick = () => {
+            mediaSheet.classList.add("hidden");
+        };
+    }
+
+    // Gallery Option
+    const optGallery = document.getElementById("optGallery");
+    if (optGallery) {
+        optGallery.onclick = () => {
+            hiddenFileInput.setAttribute("accept", "image/*");
+            hiddenFileInput.click();
+            mediaSheet.classList.add("hidden");
+        };
+    }
+
+    // Files Option
+    const optFiles = document.getElementById("optFiles");
+    if (optFiles) {
+        optFiles.onclick = () => {
+            hiddenFileInput.removeAttribute("accept");
+            hiddenFileInput.click();
+            mediaSheet.classList.add("hidden");
+        };
+    }
+
+    // File selection handle
+    hiddenFileInput.onchange = (e) => {
+        if (e.target.files.length > 0) {
+            const fileName = e.target.files[0].name;
+            // Filhal alert dikha raha hai, yahan tu apna upload logic daal sakta hai
+            console.log("File Selected:", fileName);
+            // Example: sendFile(e.target.files[0]); 
+        }
+    };
+}
+
 /* ================= PROFILE MODAL LOGIC (CLEANED) ================= */
 window.openProfile = function(name, avatar, role = "user", email = "") {
     const modal = document.getElementById("userModal");

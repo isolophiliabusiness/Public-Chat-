@@ -1,0 +1,80 @@
+/* ================= BOTTOM SHEET CSS (FIXED) ================= */
+.bottom-sheet {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 75px; /* Typing bar ki height ke upar (Adjust if needed) */
+    z-index: 2000;
+    display: flex;
+    justify-content: center;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.bottom-sheet:not(.hidden) {
+    visibility: visible;
+}
+
+/* Background overlay ko full screen rakho taaki bahar click pakad sakein */
+.sheet-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: -1;
+    pointer-events: auto;
+}
+
+.sheet-content {
+    width: 95%; /* Mobile par side se thoda gap achha lagta hai */
+    max-width: 400px;
+    background: #1a1a1a;
+    border-radius: 20px;
+    padding: 15px;
+    transform: translateY(120%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid rgba(0, 247, 255, 0.3);
+    box-shadow: 0 -5px 25px rgba(0, 0, 0, 0.5);
+    pointer-events: auto;
+}
+
+.bottom-sheet:not(.hidden) .sheet-content {
+    transform: translateY(0);
+}
+
+.sheet-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr); /* Icons ko line mein dikhane ke liye */
+    gap: 10px;
+}
+
+.sheet-list li {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 10px;
+    color: #fff;
+    font-size: 0.75rem;
+    cursor: pointer;
+}
+
+.sheet-list li i {
+    width: 45px;
+    height: 45px;
+    background: rgba(0, 247, 255, 0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #00f7ff;
+    font-size: 1.2rem;
+    transition: 0.2s;
+}
+
+.sheet-list li:active i {
+    transform: scale(0.9);
+    background: rgba(0, 247, 255, 0.3);
+}
