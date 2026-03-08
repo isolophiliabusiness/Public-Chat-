@@ -150,17 +150,17 @@ const sessionMiddleware = session({
     mongoUrl: MONGO_URI,
     ttl: 14 * 24 * 60 * 60,
   }),
-/*  cookie: {
+  cookie: {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite:
       process.env.NODE_ENV === "production" ? "none" : "lax",
-  },*/
- cookie: {
+  },
+ /*cookie: {
       httpOnly: true,
       secure: false,
       sameSite: "lax"
-    }  //localhost only
+    }*/  //localhost only
 });
 
 app.use(sessionMiddleware);
