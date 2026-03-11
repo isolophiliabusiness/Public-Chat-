@@ -157,7 +157,8 @@ let isTyping = false;
   connectWS();
 
 /* ================= ADD MESSAGE ================= */
-function addMessage(user, text, isHistory = false, time = Date.now(), messageId = null, reactions = {}, status = "server", avatar = "", replyTo = null, role = "user", email = "") {
+// Isline ko replace karo
+function addMessage(user, text, isHistory = false, time = Date.now(), messageId = null, reactions = {}, status = "server", avatar = "", replyTo = null, role = "user", email = "", media = null, fileUrl = null) {
 
     if (messageId && renderedMessages.has(messageId)) return;
     if (messageId) renderedMessages.add(messageId);
@@ -326,22 +327,61 @@ function addMessage(user, text, isHistory = false, time = Date.now(), messageId 
         };
         div.appendChild(replyTag);
     }
+/* --- LINE 330 SE 372 TAK ISSE REPLACE KAREIN --- */
 
-// --- PURANA IDENTICAL CODE HATAO AUR SIRF YE RAKHO ---
-const msgEl = document.createElement("span"); // ✅ 'div' ki jagah 'span' karo
-msgEl.className = "msg-text";
+    // 1. Image/Media Handling (Sabse Pehle)
+    // Cloudinary URL 'fileUrl' mein aata hai ya 'media.data' mein
+    const imageUrl = (media && media.data) ? media.data : fileUrl;
 
-    // Text content set karo
+    if (imageUrl) {
+        const mediaContainer = document.createElement("div");
+        mediaContainer.className = "message-media";
+        mediaContainer.style.marginTop = "5px";
+        mediaContainer.style.marginBottom = "5px";
+
+        const img = document.createElement("img");
+        img.src = imageUrl;
+        img.className = "chat-image";
+        
+        // Styling for better look
+        img.style.cssText = `
+            max-width: 100%;
+            max-height: 250px;
+            border-radius: 12px;
+            display: block;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        `;
+        
+        // Full screen view on click
+        img.onclick = () => window.open(imageUrl, "_blank");
+        
+        // Error handling agar URL galat ho
+        img.onerror = () => { img.style.display = 'none'; };
+
+        mediaContainer.appendChild(img);
+        div.appendChild(mediaContainer);
+    }
+
+    // 2. Text Content Handling
+    const msgEl = document.createElement("span");
+    msgEl.className = "msg-text";
+
     if (text === "This message was deleted" || text === "🚫 This message was deleted") {
         msgEl.textContent = "🚫 This message was deleted";
         msgEl.style.fontStyle = "italic";
         msgEl.style.opacity = "0.6";
-    } else {
+        div.appendChild(msgEl);
+    } else if (text && text !== "📷 Image" && text.trim() !== "") {
+        // Sirf tab text dikhao jab wo actual message ho
         msgEl.textContent = text;
+        div.appendChild(msgEl);
     }
 
-    // IMPORTANT: msgEl ko message bubble (div) ke andar daalo
-    div.appendChild(msgEl);
+/* --- REPLACEMENT KHATAM --- */
+
+/* --- REPLACEMENT KHATAM (YAHAN SE META START HOGA) --- */
+
 
     // --- META (TIME & STATUS) ---
     const meta = document.createElement("div");
@@ -1044,7 +1084,8 @@ if (data.type === "history") {
                 msg.avatar, 
                 msg.replyTo, 
                 msg.role,
-                msg.email
+                msg.email,
+                msg.media
             );
         });
 
@@ -1069,15 +1110,16 @@ if (data.type === "chat") {
 addMessage(
   data.msg.user,
   data.msg.text,
-  false,               // isHistory
+  false,               
   data.msg.time,
   data.msg._id,
   data.msg.reactions,
   data.msg.status || "server",
   data.msg.avatar,
   data.msg.replyTo,
-  data.msg.role || "user", // ✅ Agar server se role na aaye toh default 'user' rahe
- data.msg.email // ✅ YE 11th POSITION PAR ADD KARO
+  data.msg.role || "user", 
+  data.msg.email,
+  data.msg.media // <--- Ye 12th position par add kiya
 );
 
 
@@ -1277,13 +1319,31 @@ if (mediaBtn && mediaSheet) {
 
     // File selection handle
     hiddenFileInput.onchange = (e) => {
-        if (e.target.files.length > 0) {
-            const fileName = e.target.files[0].name;
-            // Filhal alert dikha raha hai, yahan tu apna upload logic daal sakta hai
-            console.log("File Selected:", fileName);
-            // Example: sendFile(e.target.files[0]); 
-        }
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = () => {
+            const payload = {
+                type: "chat",
+                room: "public",
+                text: "", // Media ke liye text khali chhod sakte hain
+                media: {
+                    name: file.name,
+                    type: file.type,
+                    data: reader.result // Base64 format mein file data
+                }
+            };
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify(payload));
+                if (typeof playSendSound === "function") playSendSound();
+            }
+        };
+        reader.readAsDataURL(file); // File ko Base64 mein convert karega
+        mediaSheet.classList.add("hidden"); // Sheet band kar do
+        e.target.value = ""; // Input reset karo
     };
+
 }
 
 /* ================= PROFILE MODAL LOGIC (CLEANED) ================= */
