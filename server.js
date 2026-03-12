@@ -891,6 +891,56 @@ client.send(JSON.stringify({
         }
         return;
       }
+/* ===== REPORT USER (DIRECT) ===== */
+if (data.type === "report-user") {
+  const { targetEmail, targetName, reason } = data;
+  const reporterEmail = req.user?.email;
+
+  if (!targetEmail || !reporterEmail) return;
+
+  try {
+    // Database mein report save karo
+    const newReport = new Report({
+      reporterEmail: reporterEmail,
+      reportedUser: targetName,
+      reportedEmail: targetEmail,
+      messageText: "N/A (Direct Profile Report)",
+      reason: reason || "No reason provided",
+      timestamp: Date.now()
+    });
+    
+    await newReport.save();
+
+    // Reporter ko confirmation bhejo
+    ws.send(JSON.stringify({ 
+      type: "success", 
+      message: "✅ User report submitted successfully." 
+    }));
+
+    // Admins ko live notification bhejo (Optional but recommended)
+    wss.clients.forEach(client => {
+      const clientData = sockets.get(client);
+      if (onlineUsersData.get(clientData?.id)?.role === "admin") {
+        client.send(JSON.stringify({
+          type: "new-live-report",
+          report: {
+            _id: newReport._id,
+            targetName: newReport.reportedUser,
+            targetEmail: newReport.reportedEmail,
+            reportedBy: newReport.reporterEmail,
+            reason: newReport.reason,
+            text: newReport.messageText,
+            timestamp: newReport.timestamp
+          }
+        }));
+      }
+    });
+
+  } catch (err) {
+    console.error("Direct Report Error:", err);
+  }
+  return;
+}
 
     });
 
