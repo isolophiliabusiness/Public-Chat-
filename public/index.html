@@ -107,8 +107,15 @@
       <img id="modalAvatar" src="" alt="User">
       <h2 id="modalName">User Name</h2>
       <p id="modalEmail">user@example.com</p>
-       <div id="adminActions"></div> 
-      <button id="closeModal">Back to Chat</button>
+      <div id="adminActions"></div> 
+<div id="adminActions" style="display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; margin-top: 20px; padding: 0 10px; box-sizing: border-box;">
+<button id="manualReportBtn" title="Report User" style="display:none; background: rgba(255, 0, 0, 0.1); border: 1px solid #ff4444; color: #ff4444; width: 34px; height: 34px; border-radius: 50%; cursor: pointer; padding: 0; display: inline-flex; align-items: center; justify-content: center; overflow: hidden; vertical-align: middle;">
+    <i class="fa-solid fa-flag" style="font-size: 13px; margin: 0; padding: 0; display: block; width: auto; height: auto;"></i>
+</button>
+
+    <button id="closeModal" style="margin: 0; flex: 0 1 180px; height: 36px; display: flex; align-items: center; justify-content: center;">Back to Chat</button>
+</div>
+
     </div>
   </div>
 </div>

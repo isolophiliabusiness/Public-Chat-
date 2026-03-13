@@ -1257,33 +1257,33 @@ window.openProfile = function(name, avatar, role = "user", email = "") {
         adminActions.innerHTML = ""; 
 
         // --- REPORT BUTTON LOGIC START ---
-        const reportBtn = document.createElement("button");
-        reportBtn.textContent = "🚩 Report User";
-        reportBtn.style.cssText = "background: #ef4444; color: white; border: none; padding: 10px; border-radius: 8px; margin-top: 15px; width: 100%; cursor: pointer; font-weight: bold;";
+        // --- REPORT BUTTON LOGIC (CONTROLLED BY INDEX) ---
+        const reportBtn = document.getElementById("manualReportBtn");
 
-        reportBtn.onclick = () => {
-            const reason = prompt(`Why are you reporting ${name}? (Min 10 characters)`);
-            if (reason) {
-                if (reason.length < 10) {
-                    alert("Reason is too short! Please provide more details.");
-                    return;
+        if (reportBtn) {
+            reportBtn.style.display = "block"; // Button ko dikhao
+            
+            reportBtn.onclick = () => {
+                const reason = prompt(`Why are you reporting ${name}? (Min 10 characters)`);
+                if (reason) {
+                    if (reason.length < 10) {
+                        alert("Reason is too short! Please provide more details.");
+                        return;
+                    }
+                    if (ws && ws.readyState === WebSocket.OPEN) {
+                        ws.send(JSON.stringify({
+                            type: "report-user",
+                            targetEmail: email,
+                            targetName: name,
+                            reason: reason,
+                            reportedBy: window.currentUser
+                        }));
+                        alert("Report sent to admin!");
+                        modal.classList.add("hidden");
+                    }
                 }
-                if (ws && ws.readyState === WebSocket.OPEN) {
-                    ws.send(JSON.stringify({
-                        type: "report-user",
-                        targetEmail: email,
-                        targetName: name,
-                        reason: reason,
-                        reportedBy: window.currentUser
-                    }));
-                    alert("Report sent to admin!");
-                    modal.classList.add("hidden"); // Report ke baad modal band
-                }
-            }
-        };
-        adminActions.appendChild(reportBtn);
-        // --- REPORT BUTTON LOGIC END ---
-
+            };
+        }
 
         modal.classList.remove("hidden");
     }
