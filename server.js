@@ -104,9 +104,6 @@ const messageSchema = new mongoose.Schema({
   user: { type: String, required: true },
   email: { type: String }, // ✅ YE ZAROORI HAI
   text: { type: String, required: true, maxlength: 500 },
-  // Line 94.5: Image ya File URL ke liye
-  fileUrl: { type: String, default: "" }, 
-  fileType: { type: String, default: "text" }, // text, image, ya video
   time: { type: Number, index: true },
   role: { type: String, default: "user" }, // ✅ YE LINE ADD KARO
   reactions: { type: Map, of: [String], default: {} },
@@ -275,19 +272,6 @@ app.get("/", (req, res) => {
 // Chat Dashboard Route
 app.get("/chat", ensureAuth, (req, res) => {
   res.sendFile(__dirname + "/public/index.html");
-});
-
-app.post("/upload", ensureAuth, async (req, res) => {
-  try {
-    const fileStr = req.body.data;
-    const uploadResponse = await cloudinary.uploader.upload(fileStr, {
-      upload_preset: "ml_default", // Make sure this preset exists in Cloudinary
-    });
-    res.json({ url: uploadResponse.secure_url });
-  } catch (err) {
-    console.error("Cloudinary Error:", err);
-    res.status(500).json({ error: "Upload failed" });
-  }
 });
 
 // ZAROORI: Server ko batao ki saari assets 'public' folder mein hain
@@ -674,36 +658,23 @@ if (data.type === "admin-action") {
         return;
       }
 
-/* ===== CHAT (FIXED FOR CLOUDINARY) ===== */
+/* ===== CHAT (TEXT ONLY - NO MEDIA) ===== */
 if (data.type === "chat") {
-    // ... security checks (banned/muted) wahi rehne do ...
-
     const userEmail = req.user?.email;
-    let finalFileUrl = "";
 
     try {
-        // AGAR IMAGE HAI TOH PEHLE CLOUDINARY PE BHEJO
-        if (data.media && data.media.data) {
-            console.log("Uploading to Cloudinary...");
-            const uploadRes = await cloudinary.uploader.upload(data.media.data, {
-                folder: "chat_images",
-                resource_type: "auto"
-            });
-            finalFileUrl = uploadRes.secure_url; // Cloudinary ka link mil gaya!
-        }
-
-        // Text Cleanup
+        // 1. Text Cleanup (No media check needed)
         let cleanText = sanitizeHtml(data.text || "", { allowedTags: [], allowedAttributes: {} });
         try { if (cleanText) cleanText = filter.clean(cleanText); } catch (err) {}
 
-        // Database Save
+        if (!cleanText || cleanText.trim() === "") return; // Khali message mat bhejo
+
+        // 2. Database Save (Text only fields)
         const message = new Message({
             room,
             user: req.user?.name || userEmail,
             email: userEmail,
-            text: cleanText || "📷 Image",
-            fileUrl: finalFileUrl, // Yahan ab Cloudinary ka link jayega
-            fileType: data.media?.type || "text",
+            text: cleanText,
             time: Date.now(),
             role: req.user?.role || "user",
             avatar: req.user?.avatar || "",
@@ -713,15 +684,14 @@ if (data.type === "chat") {
 
         await message.save();
 
-        // Sabko bhejo
+        // 3. Sabko broadcast karo
         const chatPayload = JSON.stringify({ type: "chat", room, msg: message.toObject() });
         wss.clients.forEach((client) => {
             if (client.readyState === WebSocket.OPEN) client.send(chatPayload);
         });
 
     } catch (err) {
-        console.error("Cloudinary/DB Error:", err);
-        ws.send(JSON.stringify({ type: "error", message: "Upload failed!" }));
+        console.error("Chat Error:", err);
     }
     return;
 }
