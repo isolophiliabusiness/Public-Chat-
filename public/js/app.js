@@ -125,20 +125,26 @@ let isTyping = false;
     ws.onmessage = handleWSMessage;
 
 // --- Line 127 se 137 ke beech isse badlein ---
-    ws.onclose = () => {
-      // 🛑 Connection band toh timer bhi band
+    ws.onclose = (event) => {
+      // 🛑 Timer band karo
       if (uptimeInterval) {
         clearInterval(uptimeInterval);
         uptimeInterval = null;
       }
 
+      // ✅ AGAR KICK NOTICE MILA HAI TO RECONNECT MAT KARO
+      // WhatsApp style: Agar server ne kick kiya hai to wapas connect nahi hona chahiye
+      if (window.isKickedOut) {
+          console.log("Kicked out. Reconnect disabled.");
+          return; 
+      }
+
+      console.log("WS Closed. Retrying...");
       setTimeout(() => {
         if (retryCount < MAX_RETRIES) {
           connectWS();
           retryCount++;
           reconnectDelay = Math.min(reconnectDelay * 1.5, 10000);
-        } else {
-          console.warn("Max reconnect attempts reached.");
         }
       }, reconnectDelay);
     };
@@ -841,9 +847,18 @@ if (data.type === "all-members-list") {
     }
 
     // 2. MEMBERS LIST (Wahi purana styling jo tune diya tha)
+    // 2. MEMBERS LIST
     const container = document.getElementById("banListContent");
+    const banModal = document.getElementById("banListModal"); // Modal ka status check karne ke liye
+    
     if (!container) return;
-    container.innerHTML = ""; 
+
+    // ✅ FIX: Agar Modal 'hidden' hai, toh list render karne ki mehnat mat karo (aur purani list mat mitao)
+    if (banModal && banModal.classList.contains("hidden")) {
+        return; 
+    }
+
+    container.innerHTML = ""; // Ab ye sirf tab chalega jab modal open hoga
 
     if (!data.users || data.users.length === 0) {
         container.innerHTML = `<tr><td style="text-align: center; padding: 20px; color: #64748b; font-size: 0.8rem;">No members found.</td></tr>`;
@@ -886,34 +901,36 @@ if (data.type === "all-members-list") {
 }
 
 
-    // 🚀 1. BAN / KICK OVERLAY LOGIC (Add this here)
+    // 🚀 1. BAN / KICK OVERLAY LOGIC
     if (data.type === "kick-notice" || data.type === "ban-notice") {
+        window.isKickedOut = true; // ✅ Ye line sabse upar add karni hai (reconnect rokne ke liye)
+        
         const typeTitle = data.type === "ban-notice" ? "⛔ PERMANENTLY BANNED" : "⚠️ KICKED FROM CHAT";
-        const message = data.type === "ban-notice" 
-            ? "Your access has been permanently revoked for violating community guidelines." 
+        const message = data.type === "ban-notice"
+            ? "Your access has been permanently revoked for violating community guidelines."
             : "You have been kicked from the current session by an admin.";
 
         // Poori screen ko naye design se replace kar do
         document.body.innerHTML = `
-            <div style="height: 100vh; background: #0a0f1e; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; font-family: 'Segoe UI', Roboto, sans-serif; padding: 20px; overflow: hidden;">
-                <div style="background: rgba(255, 71, 87, 0.05); border: 1px solid rgba(255, 71, 87, 0.3); padding: 40px; border-radius: 24px; box-shadow: 0 0 40px rgba(255, 71, 87, 0.1); max-width: 450px; width: 100%;">
+            <div style="height: 100vh; background: #0a0f1e; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; text-align: center;">
+                <div style="background: rgba(255, 71, 87, 0.05); border: 1px solid rgba(255, 71, 87, 0.3); padding: 40px; border-radius: 20px; max-width: 500px; backdrop-filter: blur(10px); box-shadow: 0 15px 35px rgba(0,0,0,0.5);">
                     <div style="font-size: 50px; margin-bottom: 20px;">🚫</div>
-                    <h1 style="color: #ff4757; font-size: 1.8rem; margin-bottom: 15px; font-weight: 800; letter-spacing: -0.5px;">${typeTitle}</h1>
+                    <h1 style="color: #ff4757; font-size: 1.8rem; margin-bottom: 15px; font-weight: 800; letter-spacing: 1px;">${typeTitle}</h1>
                     <p style="font-size: 1rem; color: #cbd5e1; line-height: 1.6; margin-bottom: 25px;">${message}</p>
-                    
-                    <div style="background: rgba(0, 247, 255, 0.03); border: 1px dashed rgba(0, 247, 255, 0.3); padding: 20px; border-radius: 16px; margin-bottom: 25px;">
-                        <p style="margin: 0 0 10px 0; color: #94a3b8; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px;">Appeal this action</p>
-                        <a href="mailto:support@yourdomain.com" style="color: #00f7ff; font-weight: bold; text-decoration: none; font-size: 1.1rem; word-break: break-all;">📩 support@yourdomain.com</a>
+
+                    <div style="background: rgba(0, 247, 255, 0.03); border: 1px dashed rgba(0, 247, 255, 0.3); padding: 15px; border-radius: 12px; margin-bottom: 30px;">
+                        <p style="margin: 0 0 10px 0; color: #94a3b8; font-size: 0.85rem; text-transform: uppercase;">Technical Support</p>
+                        <a href="mailto:support@yourdomain.com" style="color: #00f7ff; font-weight: bold; text-decoration: none; font-size: 1.1rem;">support@yourdomain.com</a>
                     </div>
 
-                    <button onclick="window.location.href='/login'" style="background: #1e293b; color: white; border: 1px solid #334155; padding: 12px 24px; border-radius: 12px; cursor: pointer; font-weight: 600; transition: 0.3s; width: 100%;">Return to Login</button>
+                    <button onclick="window.location.href='/login'" style="background: #1e293b; color: white; border: 1px solid #334155; padding: 12px 30px; border-radius: 10px; font-weight: 600; cursor: pointer; transition: 0.3s; width: 100%;">Return to Login</button>
                 </div>
             </div>
         `;
 
         // Browser se data saaf karo taaki wo wapas na ghuse
         localStorage.removeItem("chatUser");
-        if(ws) ws.close(); 
+        if(ws) ws.close();
         return; // Important: Iske neeche ka koi code mat chalao
     }
 

@@ -298,19 +298,22 @@ const sockets = new Map();
 const onlineUsersData = new Map(); // Naya Map
 
 function emitOnlineUsers() {
-  const usersList = Array.from(onlineUsersData.values());
+  // Map se saare users nikaalo
+  const allConnections = Array.from(onlineUsersData.values());
+  
+  // 'Set' ka use karke sirf unique emails gino
+  const uniqueEmails = new Set(allConnections.map(u => u.email));
+  
   const data = JSON.stringify({
-    type: "online-users-list", // Type badal diya frontend ke liye
-    count: usersList.length,
-    users: usersList
+    type: "online-users-list", 
+    count: uniqueEmails.size, // ✅ Ye asli count hai
+    users: allConnections
   });
 
   wss.clients.forEach((c) => {
     if (c.readyState === WebSocket.OPEN) c.send(data);
   });
 }
-
-
 wss.on("connection", (ws, req) => {
   ws.isAlive = true;
   ws.on("pong", () => (ws.isAlive = true));
@@ -342,7 +345,26 @@ if (isMutedLogin) {
         return;
       }
 
-      // --- IDENTITY & REGISTRATION ---
+            // --- IDENTITY & REGISTRATION (WHATSAPP STYLE) ---
+      
+      wss.clients.forEach((client) => {
+        const clientData = sockets.get(client);
+        if (clientData && clientData.email === req.user.email && client !== ws) {
+            // 1. Purane wale ko special kick-notice bhejo
+            client.send(JSON.stringify({ 
+              type: "kick-notice", 
+              message: "⚠️ Logged in from another device." 
+            }));
+            
+            // 2. Flag set karo taaki Client-side reconnect na kare
+            client.isKicked = true; 
+
+            // 3. Connection terminate karo
+            setTimeout(() => client.terminate(), 500);
+            console.log(`Kick purana connection for: ${req.user.email}`);
+        }
+      });
+
       ws.send(JSON.stringify({
         type: "me",
         email: req.user.email,
@@ -351,11 +373,10 @@ if (isMutedLogin) {
         role: req.user.role || "user" 
       }));
 
-      // Generate a truly unique ID for this specific connection
       const socketId = require('crypto').randomUUID(); 
-      sockets.set(ws, { id: socketId, room: "public" });
+      // Sockets map mein email bhi save karo taaki search karne mein asani ho
+      sockets.set(ws, { id: socketId, room: "public", email: req.user.email });
 
-      // Sidebar data mein save karo
       onlineUsersData.set(socketId, {
         name: req.user.name,
         avatar: req.user.avatar,
@@ -364,7 +385,6 @@ if (isMutedLogin) {
       });
 
       emitOnlineUsers();
-
 
     ws.on("message", async (raw) => {
       let data;
