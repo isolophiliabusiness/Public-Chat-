@@ -16,7 +16,6 @@
 ">
    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/7.0.1/css/all.min.css" integrity="sha512-2SwdPD6INVrV/lHTZbO2nodKhrnDdJK9/kg2XD1r9uGqPo1cUbujc+IYdlYdEErWNu69gVcYgdxlmVmzTWnetw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <link rel="stylesheet" href="css/style.css">
-<link rel="stylesheet" href="css/media-sheet.css">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#00f7ff">
 </head>
@@ -92,11 +91,10 @@
     </div>
 
     <div class="input-bar" style="position: relative; bottom: 0; left: -8px; transform: none; width: 100%;">
-        <i class="fa-solid fa-plus" id="mediaBtn" style="cursor: pointer; padding: 10px; color: #00f7ff; font-size: 1.2rem;"></i>
         <input type="text" id="messageInput" placeholder="Type a message..."/>
         <div class="sendBtn">
             <button id="sendBtn">
-                <i class="fa-solid fa-paper-plane"></i>
+               <i class="fa-solid fa-paper-plane"></i>
             </button>
         </div>
     </div>
@@ -167,21 +165,6 @@
         </div>
     </div>
 </div>
-
-<div id="mediaSheet" class="bottom-sheet hidden">
-    <div class="sheet-overlay" id="closeSheet"></div>
-    <div class="sheet-content">
-        <div class="sheet-handle"></div>
-        <ul class="sheet-list">
-            <li id="optCamera"><i class="fa-solid fa-camera"></i> <span>Camera</span></li>
-            <li id="optGallery"><i class="fa-solid fa-image"></i> <span>Gallery</span></li>
-            <li id="optFiles"><i class="fa-solid fa-paperclip"></i> <span>Files</span></li>
-            <li id="optDrive"><i class="fa-solid fa-hard-drive"></i> <span>Drive</span></li>
-        </ul>
-    </div>
-</div>
-
-<input type="file" id="hiddenFileInput" style="display: none;">
 
 </body> 
 </html>

@@ -67,12 +67,6 @@ if(logoutBtn) {
   const input = document.getElementById("messageInput");
   const sendBtn = document.getElementById("sendBtn");
   const newMsgBtn = document.getElementById("newMsgBtn");
-  // Line 70 ke neeche ye add kar:
-  const mediaBtn = document.getElementById("mediaBtn"); // Plus icon
-  const mediaSheet = document.getElementById("mediaSheet"); // Bottom sheet div
-  const closeSheet = document.getElementById("closeSheet"); // Overlay
-  const hiddenFileInput = document.getElementById("hiddenFileInput"); // Hidden input
-
 /* ================= CHAT SOUNDS (UPDATED PATH) ================= */
 const sendSound = new Audio("assets/audio/send.mp3");
 const receiveSound = new Audio("assets/audio/received.mp3");
@@ -158,7 +152,7 @@ let isTyping = false;
 
 /* ================= ADD MESSAGE ================= */
 // Isline ko replace karo
-function addMessage(user, text, isHistory = false, time = Date.now(), messageId = null, reactions = {}, status = "server", avatar = "", replyTo = null, role = "user", email = "", media = null, fileUrl = null) {
+function addMessage(user, text, isHistory = false, time = Date.now(), messageId = null, reactions = {}, status = "server", avatar = "", replyTo = null, role = "user", email = "") {
 
     if (messageId && renderedMessages.has(messageId)) return;
     if (messageId) renderedMessages.add(messageId);
@@ -327,43 +321,7 @@ function addMessage(user, text, isHistory = false, time = Date.now(), messageId 
         };
         div.appendChild(replyTag);
     }
-/* --- LINE 330 SE 372 TAK ISSE REPLACE KAREIN --- */
-
-    // 1. Image/Media Handling (Sabse Pehle)
-    // Cloudinary URL 'fileUrl' mein aata hai ya 'media.data' mein
-    const imageUrl = (media && media.data) ? media.data : fileUrl;
-
-    if (imageUrl) {
-        const mediaContainer = document.createElement("div");
-        mediaContainer.className = "message-media";
-        mediaContainer.style.marginTop = "5px";
-        mediaContainer.style.marginBottom = "5px";
-
-        const img = document.createElement("img");
-        img.src = imageUrl;
-        img.className = "chat-image";
-        
-        // Styling for better look
-        img.style.cssText = `
-            max-width: 100%;
-            max-height: 250px;
-            border-radius: 12px;
-            display: block;
-            cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-        `;
-        
-        // Full screen view on click
-        img.onclick = () => window.open(imageUrl, "_blank");
-        
-        // Error handling agar URL galat ho
-        img.onerror = () => { img.style.display = 'none'; };
-
-        mediaContainer.appendChild(img);
-        div.appendChild(mediaContainer);
-    }
-
-    // 2. Text Content Handling
+    // 1. Text Content Handling (No Media)
     const msgEl = document.createElement("span");
     msgEl.className = "msg-text";
 
@@ -372,16 +330,11 @@ function addMessage(user, text, isHistory = false, time = Date.now(), messageId 
         msgEl.style.fontStyle = "italic";
         msgEl.style.opacity = "0.6";
         div.appendChild(msgEl);
-    } else if (text && text !== "📷 Image" && text.trim() !== "") {
-        // Sirf tab text dikhao jab wo actual message ho
+    } else if (text && text.trim() !== "") {
+        // Simple text message handle karein
         msgEl.textContent = text;
         div.appendChild(msgEl);
     }
-
-/* --- REPLACEMENT KHATAM --- */
-
-/* --- REPLACEMENT KHATAM (YAHAN SE META START HOGA) --- */
-
 
     // --- META (TIME & STATUS) ---
     const meta = document.createElement("div");
@@ -1084,8 +1037,7 @@ if (data.type === "history") {
                 msg.avatar, 
                 msg.replyTo, 
                 msg.role,
-                msg.email,
-                msg.media
+                msg.email
             );
         });
 
@@ -1119,7 +1071,6 @@ addMessage(
   data.msg.replyTo,
   data.msg.role || "user", 
   data.msg.email,
-  data.msg.media // <--- Ye 12th position par add kiya
 );
 
 
@@ -1282,69 +1233,6 @@ function removeTypingIndicator() {
      currentReplyData = null;
      document.getElementById("replyPreview").classList.add("hidden");
  };
-
- /* ================= BOTTOM SHEET (GALLERY/FILES) LOGIC ================= */
-if (mediaBtn && mediaSheet) {
-    // Plus icon click par sheet dikhao
-    mediaBtn.onclick = () => {
-        mediaSheet.classList.remove("hidden");
-    };
-
-    // Bahar click karne par sheet band
-    if (closeSheet) {
-        closeSheet.onclick = () => {
-            mediaSheet.classList.add("hidden");
-        };
-    }
-
-    // Gallery Option
-    const optGallery = document.getElementById("optGallery");
-    if (optGallery) {
-        optGallery.onclick = () => {
-            hiddenFileInput.setAttribute("accept", "image/*");
-            hiddenFileInput.click();
-            mediaSheet.classList.add("hidden");
-        };
-    }
-
-    // Files Option
-    const optFiles = document.getElementById("optFiles");
-    if (optFiles) {
-        optFiles.onclick = () => {
-            hiddenFileInput.removeAttribute("accept");
-            hiddenFileInput.click();
-            mediaSheet.classList.add("hidden");
-        };
-    }
-
-    // File selection handle
-    hiddenFileInput.onchange = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = () => {
-            const payload = {
-                type: "chat",
-                room: "public",
-                text: "", // Media ke liye text khali chhod sakte hain
-                media: {
-                    name: file.name,
-                    type: file.type,
-                    data: reader.result // Base64 format mein file data
-                }
-            };
-            if (ws && ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify(payload));
-                if (typeof playSendSound === "function") playSendSound();
-            }
-        };
-        reader.readAsDataURL(file); // File ko Base64 mein convert karega
-        mediaSheet.classList.add("hidden"); // Sheet band kar do
-        e.target.value = ""; // Input reset karo
-    };
-
-}
 
 /* ================= PROFILE MODAL LOGIC (CLEANED) ================= */
 window.openProfile = function(name, avatar, role = "user", email = "") {
